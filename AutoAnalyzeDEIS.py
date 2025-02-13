@@ -9,7 +9,7 @@ from th_deis.helper import jax2th, th2jax
 import sympy
 from sympy import symbols
 import functools
-np.set_printoptions(suppress=True, linewidth=200, precision=5)
+np.set_printoptions(suppress=True, linewidth=300, precision=5)
 from collections import OrderedDict
 
 expr_pool = OrderedDict()
@@ -118,7 +118,7 @@ def eps_fn(x_t, t, beta_min, beta_max):
 
 
 def sampling_tab_tx():
-    num_step = 15
+    num_step = 10
     sampling_eps, T = 0.001, 1
     beta_min, beta_max = 0.1, 20
     t2alpha_fn, alpha2t_fn = tdeis.get_linear_alpha_fns(beta_min, beta_max)
