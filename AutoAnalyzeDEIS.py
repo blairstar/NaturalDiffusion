@@ -1,4 +1,5 @@
 import numpy as np
+np.set_printoptions(suppress=True, linewidth=200, precision=3)
 
 import th_deis as tdeis
 from th_deis.sampler import get_sampler_t_ab, get_sampler_rho_ab
@@ -9,8 +10,10 @@ from th_deis.helper import jax2th, th2jax
 import sympy
 from sympy import symbols
 import functools
-np.set_printoptions(suppress=True, linewidth=300, precision=5)
+np.set_printoptions(suppress=True, linewidth=300, precision=3)
 from collections import OrderedDict
+import pandas as pd
+
 
 expr_pool = OrderedDict()
 
@@ -118,7 +121,7 @@ def eps_fn(x_t, t, beta_min, beta_max):
 
 
 def sampling_tab_tx():
-    num_step = 10
+    num_step = 18
     sampling_eps, T = 0.001, 1
     beta_min, beta_max = 0.1, 20
     t2alpha_fn, alpha2t_fn = tdeis.get_linear_alpha_fns(beta_min, beta_max)
@@ -162,7 +165,13 @@ def sampling_tab_tx():
     print(past_epsilon_coeff)
     print(node_coeff)
     
-    np.savez("tab_%s.npz"%num_step, past_xstart_coeff=past_xstart_coeff,
+    names = ["s%02d" % ii for ii in range(17, -1, -1)]
+    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names, index=names)
+    df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
+    df.to_csv("deis_tab_%03d.csv" % num_step)
+    print(df)
+
+    np.savez("deis_tab_%s.npz"%num_step, past_xstart_coeff=past_xstart_coeff,
              past_epsilon_coeff=past_epsilon_coeff, node_coeff=node_coeff)
     
     return

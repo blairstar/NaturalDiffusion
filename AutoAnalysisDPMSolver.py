@@ -2,6 +2,9 @@ import numpy as np
 from sympy import symbols
 import sympy
 import torch
+import pandas as pd
+
+np.set_printoptions(suppress=True, linewidth=200, precision=3)
 
 expr_pool = {}
 
@@ -255,12 +258,12 @@ def show_symbol_coeff(expr, symbols):
     return np.array(coeffs)
 
 
-def sampling_tx():
-    
-    betas = np.linspace(0.0001, 0.02, 1000, dtype=np.float64)
-    betas = torch.from_numpy(betas)
-    ns = NoiseScheduleVP('discrete', betas=betas)
-    
+def sampling_dpmsolver_2s_tx():
+    # betas = np.linspace(0.0001, 0.02, 1000, dtype=np.float64)
+    # betas = torch.from_numpy(betas)
+    # ns = NoiseScheduleVP('discrete', betas=betas)
+    ns = NoiseScheduleVP('linear', continuous_beta_0=0.1, continuous_beta_1=20)
+
     step = 10
     time_nodes = np.linspace(1.0, 0.001, step+1)
     time_nodes = torch.from_numpy(time_nodes)
@@ -280,7 +283,7 @@ def sampling_tx():
         lambda_s1 = lambda_s + r1 * h
         
         s1 = ns.inverse_lambda(lambda_s1)
-        all_time_nodes.extend([s, s1, t])
+        all_time_nodes.extend([s.item(), s1.item(), t.item()])
         
         log_alpha_s = ns.marginal_log_mean_coeff(s)
         log_alpha_s1 = ns.marginal_log_mean_coeff(s1)
@@ -320,29 +323,409 @@ def sampling_tx():
         add_item("x_%0.4f"%s1, x_s1)
         add_item("x_%0.4f"%t, x_t)
     
-    all_time_nodes = sorted(list(set(all_time_nodes)), reverse=True)
-    
+    # all_time_nodes = sorted(list(set(all_time_nodes)), reverse=True)
+    all_time_nodes = sorted(list(np.unique(np.array(all_time_nodes).round(6))), reverse=True)
+
     ys = get_y_symbols()
     epss = get_eps_symbols()
     
-    for t in all_time_nodes:
+    past_xstart_coeff = np.zeros([2*step, 2*step])
+    past_epsilon_coeff = np.zeros([2*step, 2*step])
+    node_coeff = np.zeros([2*step+1, 3])
+
+    for kk, t in enumerate(all_time_nodes):
         x_t = get_item("x_%0.4f"%t)
         
         print("t", t)
         y_coeffs = show_symbol_coeff(x_t, ys)
-        true_y_alpha = ns.marginal_alpha(t).item()
+        true_y_alpha = ns.marginal_alpha(torch.tensor(t)).item()
         print("y result", np.sum(y_coeffs), true_y_alpha)
         
         eps_coeffs = show_symbol_coeff(x_t, epss)
-        true_eps_sigma = ns.marginal_std(t).item()
+        true_eps_sigma = ns.marginal_std(torch.tensor(t)).item()
+        print("eps result", np.linalg.norm(eps_coeffs), true_eps_sigma)
+        print("")
+
+        node_coeff[kk, :] = np.array([t, true_y_alpha, true_eps_sigma])
+        if not np.isclose(t, 1.0):
+            past_xstart_coeff[kk - 1, :len(y_coeffs)] = np.array(y_coeffs)
+            past_epsilon_coeff[kk - 1, :len(eps_coeffs)] = np.array(eps_coeffs)
+
+    print(past_xstart_coeff)
+    print(past_epsilon_coeff)
+    print(node_coeff)
+
+    names = ["s%02d" % ii for ii in range(17, -1, -1)]
+    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names, index=names)
+    df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
+    df.to_csv("dpmsolver2s_%03d.csv" % (2*step))
+    print(df)
+
+    np.savez("dpmsolver2s_%03d.npz" % (2*step), past_xstart_coeff=past_xstart_coeff,
+             past_epsilon_coeff=past_epsilon_coeff, node_coeff=node_coeff)
+        
+    return
+
+
+def sampling_dpmsolver_pp_2s_tx():
+    # betas = np.linspace(0.0001, 0.02, 1000, dtype=np.float64)
+    # betas = torch.from_numpy(betas)
+    # ns = NoiseScheduleVP('discrete', betas=betas)
+    ns = NoiseScheduleVP('linear', continuous_beta_0=0.1, continuous_beta_1=20)
+
+    step = 9
+    time_nodes = np.linspace(1.0, 0.001, step + 1)
+    time_nodes = torch.from_numpy(time_nodes)
+
+    eps_t = symbols("eps_%0.4f" % (time_nodes[0]))
+    add_item("eps_%0.4f" % (time_nodes[0]), eps_t)
+    add_item("x_%0.4f" % time_nodes[0], eps_t * 1.0)
+
+    all_time_nodes = []
+    for ii in range(step):
+        s = time_nodes[ii]
+        t = time_nodes[ii + 1]
+
+        r1 = 0.5
+        lambda_s, lambda_t = ns.marginal_lambda(s), ns.marginal_lambda(t)
+        h = lambda_t - lambda_s
+        lambda_s1 = lambda_s + r1 * h
+
+        s1 = ns.inverse_lambda(lambda_s1)
+        all_time_nodes.extend([s.item(), s1.item(), t.item()])
+
+        log_alpha_s = ns.marginal_log_mean_coeff(s)
+        log_alpha_s1 = ns.marginal_log_mean_coeff(s1)
+        log_alpha_t = ns.marginal_log_mean_coeff(t)
+
+        sigma_s, sigma_s1, sigma_t = ns.marginal_std(s), ns.marginal_std(s1), ns.marginal_std(t)
+        alpha_s, alpha_s1, alpha_t = torch.exp(log_alpha_s), torch.exp(log_alpha_s1), torch.exp(log_alpha_t)
+
+        x_s = get_item("x_%0.4f" % s)
+
+        # first step
+        x_s1_s_coeff = (sigma_s1/sigma_s).item()
+
+        phi_s1_s = torch.expm1(-r1 * h)
+        eps_s1_s_coeff = (alpha_s1 * phi_s1_s).item()
+
+        y_s = symbols("y_%0.4f" % s)
+        add_item("y_%0.4f" % s, y_s)
+
+        # model_s = (x_s - alpha_s * y_s) / sigma_s
+        model_s = y_s
+        
+        x_s1 = x_s1_s_coeff * x_s - eps_s1_s_coeff * model_s
+
+        # second step
+        x_t_s_coeff = (sigma_t/sigma_s).item()
+
+        y_s1 = symbols("y_%0.4f" % s1)
+        add_item("y_%0.4f" % s1, y_s1)
+        # model_s1 = (x_s1 - alpha_s1 * y_s1) / sigma_s1
+        model_s1 = y_s1
+        
+        phi_t_s = torch.expm1(-h)
+        eps_t_s_coeff = (alpha_t * phi_t_s).item()
+        eps_diff_t_s_coeff = ((0.5 / r1) * alpha_t * phi_t_s).item()
+
+        x_t = x_t_s_coeff * x_s - eps_t_s_coeff * model_s - eps_diff_t_s_coeff * (model_s1 - model_s)
+
+        add_item("x_%0.4f" % s1, x_s1)
+        add_item("x_%0.4f" % t, x_t)
+
+    all_time_nodes = sorted(list(np.unique(np.array(all_time_nodes).round(6))), reverse=True)
+
+    ys = get_y_symbols()
+    epss = get_eps_symbols()
+    
+    past_xstart_coeff = np.zeros([2*step, 2*step])
+    past_epsilon_coeff = np.zeros([2*step, 2*step])
+    node_coeff = np.zeros([2*step+1, 3])
+
+    for kk, t in enumerate(all_time_nodes):
+        x_t = get_item("x_%0.4f" % t)
+
+        print("t", t)
+        y_coeffs = show_symbol_coeff(x_t, ys)
+        true_y_alpha = ns.marginal_alpha(torch.tensor(t)).item()
+        print("y result", np.sum(y_coeffs), true_y_alpha)
+
+        eps_coeffs = show_symbol_coeff(x_t, epss)
+        true_eps_sigma = ns.marginal_std(torch.tensor(t)).item()
         print("eps result", np.linalg.norm(eps_coeffs), true_eps_sigma)
         print("")
         
+        node_coeff[kk, :] = np.array([t, true_y_alpha, true_eps_sigma])
+        if not np.isclose(t, 1.0):
+            past_xstart_coeff[kk-1, :len(y_coeffs)] = np.array(y_coeffs)
+            past_epsilon_coeff[kk-1, :len(eps_coeffs)] = np.array(eps_coeffs)
+
+    print(past_xstart_coeff)
+    print(past_epsilon_coeff)
+    print(node_coeff)
+    
+    names = ["s%02d" % ii for ii in range(17, -1, -1)]
+    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names, index=names)
+    df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
+    df.to_csv("dpmsolverpp2s_%03d.csv" % (2*step))
+    print(df)
+
+    np.savez("dpmsolverpp2s_%03d.npz" % (2*step), past_xstart_coeff=past_xstart_coeff,
+             past_epsilon_coeff=past_epsilon_coeff, node_coeff=node_coeff)
     return
+
+
+def sampling_dpmsolver_3s_tx():
+    ns = NoiseScheduleVP('linear', continuous_beta_0=0.1, continuous_beta_1=20)
+
+    step = 6
+    time_nodes = np.linspace(1.0, 0.001, step + 1)
+    time_nodes = torch.from_numpy(time_nodes)
+
+    eps_t = symbols("eps_%0.4f" % (time_nodes[0]))
+    add_item("eps_%0.4f" % (time_nodes[0]), eps_t)
+    add_item("x_%0.4f" % time_nodes[0], eps_t * 1.0)
+
+    all_time_nodes = []
+    for ii in range(step):
+        s = time_nodes[ii]
+        t = time_nodes[ii + 1]
+
+        r1, r2 = 1/3, 2/3
+        lambda_s, lambda_t = ns.marginal_lambda(s), ns.marginal_lambda(t)
+        h = lambda_t - lambda_s
+        lambda_s1 = lambda_s + r1*h
+        lambda_s2 = lambda_s + r2*h
+
+        s1 = ns.inverse_lambda(lambda_s1)
+        s2 = ns.inverse_lambda(lambda_s2)
+        all_time_nodes.extend([s.item(), s1.item(), s2.item(), t.item()])
+
+        log_alpha_s = ns.marginal_log_mean_coeff(s)
+        log_alpha_s1 = ns.marginal_log_mean_coeff(s1)
+        log_alpha_s2 = ns.marginal_log_mean_coeff(s2)
+        log_alpha_t = ns.marginal_log_mean_coeff(t)
+
+        sigma_s, sigma_s1 = ns.marginal_std(s), ns.marginal_std(s1)
+        sigma_s2, sigma_t = ns.marginal_std(s2), ns.marginal_std(t)
+        alpha_s, alpha_s1 = torch.exp(log_alpha_s), torch.exp(log_alpha_s1)
+        alpha_s2, alpha_t = torch.exp(log_alpha_s2), torch.exp(log_alpha_t)
+
+        x_s = get_item("x_%0.4f" % s)
+        
+        # first step
+        phi_s1_s = torch.expm1(r1 * h)
+        x_s1_s_coeff = torch.exp(log_alpha_s1 - log_alpha_s).item()
+        eps_s1_s_coeff = (sigma_s1 * phi_s1_s).item()
+
+        y_s = symbols("y_%0.4f" % s)
+        add_item("y_%0.4f" % s, y_s)
+        model_s = (x_s - alpha_s * y_s) / sigma_s
+
+        x_s1 = x_s1_s_coeff * x_s - eps_s1_s_coeff * model_s
+
+        # second step
+        x_s2_s_coeff = torch.exp(log_alpha_s2 - log_alpha_s).item()
+
+        phi_s2_s_eps = torch.expm1(r2 * h)
+        phi_s2_s_eps_diff = torch.expm1(r2 * h) / (r2 * h) - 1.
+        eps_s2_s_coeff = (sigma_s2 * phi_s2_s_eps).item()
+        eps_diff_s2_s_coeff = ((r2/r1) * sigma_s2 * phi_s2_s_eps_diff).item()
+        
+        y_s1 = symbols("y_%0.4f" % s1)
+        add_item("y_%0.4f" % s1, y_s1)
+        model_s1 = (x_s1 - alpha_s1*y_s1) / sigma_s1
+
+        x_s2 = x_s2_s_coeff*x_s - eps_s2_s_coeff*model_s - eps_diff_s2_s_coeff*(model_s1 - model_s)
+        
+        # third step
+        x_t_s_coeff = torch.exp(log_alpha_t - log_alpha_s).item()
+        
+        phi_t_s_eps = torch.expm1(h)
+        phi_t_s_eps_diff = phi_t_s_eps / h - 1.
+        eps_t_s_coeff = (sigma_t * phi_t_s_eps).item()
+        eps_diff_t_s_coeff = ((1/r2) * sigma_t * phi_t_s_eps_diff).item()
+        
+        y_s2 = symbols("y_%0.4f" % s2)
+        add_item("y_%0.4f" % s2, y_s2)
+        model_s2 = (x_s2 - alpha_s2*y_s2) / sigma_s2
+
+        x_t = x_t_s_coeff*x_s - eps_t_s_coeff*model_s - eps_diff_t_s_coeff*(model_s2 - model_s)
+        
+        add_item("x_%0.4f" % s1, x_s1)
+        add_item("x_%0.4f" % s2, x_s2)
+        add_item("x_%0.4f" % t, x_t)
+
+    all_time_nodes = sorted(list(np.unique(np.array(all_time_nodes))), reverse=True)
+
+    ys = get_y_symbols()
+    epss = get_eps_symbols()
+
+    past_xstart_coeff = np.zeros([3*step, 3*step])
+    past_epsilon_coeff = np.zeros([3*step, 3*step])
+    node_coeff = np.zeros([3*step+1, 3])
     
+    for kk, t in enumerate(all_time_nodes):
+        x_t = get_item("x_%0.4f" % t)
+
+        print("t", t)
+        y_coeffs = show_symbol_coeff(x_t, ys)
+        true_y_alpha = ns.marginal_alpha(torch.tensor(t)).item()
+        print("y result", np.sum(y_coeffs), true_y_alpha)
+
+        eps_coeffs = show_symbol_coeff(x_t, epss)
+        true_eps_sigma = ns.marginal_std(torch.tensor(t)).item()
+        print("eps result", np.linalg.norm(eps_coeffs), true_eps_sigma)
+        print("")
+        
+        node_coeff[kk, :] = np.array([t, true_y_alpha, true_eps_sigma])
+        if not np.isclose(t, 1.0):
+            past_xstart_coeff[kk-1, :len(y_coeffs)] = np.array(y_coeffs)
+            past_epsilon_coeff[kk-1, :len(eps_coeffs)] = np.array(eps_coeffs)
+
+    print(past_xstart_coeff)
+    print(past_epsilon_coeff)
+    print(node_coeff)
+
+    names = ["s%02d" % ii for ii in range(17, -1, -1)]
+    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names, index=names)
+    df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
+    df.to_csv("dpmsolver3s_%03d.csv" % (3*step))
+    print(df)
     
+    np.savez("dpmsolver3s_%03d.npz" % (3*step), past_xstart_coeff=past_xstart_coeff,
+             past_epsilon_coeff=past_epsilon_coeff, node_coeff=node_coeff)
+    return
+
+
+def sampling_dpmsolver_pp_3s_tx():
+    ns = NoiseScheduleVP('linear', continuous_beta_0=0.1, continuous_beta_1=20)
+
+    step = 6
+    time_nodes = np.linspace(1.0, 0.001, step + 1)
+    time_nodes = torch.from_numpy(time_nodes)
+
+    eps_t = symbols("eps_%0.4f" % (time_nodes[0]))
+    add_item("eps_%0.4f" % (time_nodes[0]), eps_t)
+    add_item("x_%0.4f" % time_nodes[0], eps_t * 1.0)
+
+    all_time_nodes = []
+    for ii in range(step):
+        s = time_nodes[ii]
+        t = time_nodes[ii + 1]
+
+        r1, r2 = 1/3, 2/3
+        lambda_s, lambda_t = ns.marginal_lambda(s), ns.marginal_lambda(t)
+        h = lambda_t - lambda_s
+        lambda_s1 = lambda_s + r1 * h
+        lambda_s2 = lambda_s + r2 * h
+
+        s1 = ns.inverse_lambda(lambda_s1)
+        s2 = ns.inverse_lambda(lambda_s2)
+        all_time_nodes.extend([s.item(), s1.item(), s2.item(), t.item()])
+
+        log_alpha_s = ns.marginal_log_mean_coeff(s)
+        log_alpha_s1 = ns.marginal_log_mean_coeff(s1)
+        log_alpha_s2 = ns.marginal_log_mean_coeff(s2)
+        log_alpha_t = ns.marginal_log_mean_coeff(t)
+
+        sigma_s, sigma_s1 = ns.marginal_std(s), ns.marginal_std(s1)
+        sigma_s2, sigma_t = ns.marginal_std(s2), ns.marginal_std(t)
+        alpha_s, alpha_s1 = torch.exp(log_alpha_s), torch.exp(log_alpha_s1)
+        alpha_s2, alpha_t = torch.exp(log_alpha_s2), torch.exp(log_alpha_t)
+
+        x_s = get_item("x_%0.4f" % s)
+
+        # first step
+        phi_s1_s = torch.expm1(-r1*h)
+        x_s1_s_coeff = (sigma_s1/sigma_s).item()
+        eps_s1_s_coeff = (alpha_s1 * phi_s1_s).item()
+
+        y_s = symbols("y_%0.4f" % s)
+        add_item("y_%0.4f"%s, y_s)
+        model_s = y_s
+
+        x_s1 = x_s1_s_coeff*x_s - eps_s1_s_coeff*model_s
+
+        # second step
+        x_s2_s_coeff = (sigma_s2/sigma_s).item()
+
+        phi_s2_s_eps = torch.expm1(-r2*h)
+        phi_s2_s_eps_diff = torch.expm1(-r2*h)/(r2*h) + 1.0
+        eps_s2_s_coeff = (alpha_s2 * phi_s2_s_eps).item()
+        eps_diff_s2_s_coeff = ((r2 / r1) * alpha_s2 * phi_s2_s_eps_diff).item()
+
+        y_s1 = symbols("y_%0.4f" % s1)
+        add_item("y_%0.4f" % s1, y_s1)
+        model_s1 = y_s1
+
+        x_s2 = x_s2_s_coeff*x_s - eps_s2_s_coeff*model_s - eps_diff_s2_s_coeff*(model_s1 - model_s)
+
+        # third step
+        x_t_s_coeff = (sigma_t/sigma_s).item()
+
+        phi_t_s_eps = torch.expm1(-h)
+        phi_t_s_eps_diff = phi_t_s_eps/h + 1.0
+        eps_t_s_coeff = (alpha_t * phi_t_s_eps).item()
+        eps_diff_t_s_coeff = ((1.0/r2) * alpha_t * phi_t_s_eps_diff).item()
+
+        y_s2 = symbols("y_%0.4f" % s2)
+        add_item("y_%0.4f" % s2, y_s2)
+        model_s2 = y_s2
+
+        x_t = x_t_s_coeff*x_s - eps_t_s_coeff*model_s - eps_diff_t_s_coeff*(model_s2 - model_s)
+
+        add_item("x_%0.4f" % s1, x_s1)
+        add_item("x_%0.4f" % s2, x_s2)
+        add_item("x_%0.4f" % t, x_t)
+
+    all_time_nodes = sorted(list(np.unique(np.array(all_time_nodes))), reverse=True)
+
+    ys = get_y_symbols()
+    epss = get_eps_symbols()
+
+    past_xstart_coeff = np.zeros([3*step, 3*step])
+    past_epsilon_coeff = np.zeros([3*step, 3*step])
+    node_coeff = np.zeros([3*step+1, 3])
+    
+    for kk, t in enumerate(all_time_nodes):
+        x_t = get_item("x_%0.4f" % t)
+
+        print("t", t)
+        y_coeffs = show_symbol_coeff(x_t, ys)
+        true_y_alpha = ns.marginal_alpha(torch.tensor(t)).item()
+        print("y result", np.sum(y_coeffs), true_y_alpha)
+
+        eps_coeffs = show_symbol_coeff(x_t, epss)
+        true_eps_sigma = ns.marginal_std(torch.tensor(t)).item()
+        print("eps result", np.linalg.norm(eps_coeffs), true_eps_sigma)
+        print("")
+        
+        node_coeff[kk, :] = np.array([t, true_y_alpha, true_eps_sigma])
+        if not np.isclose(t, 1.0):
+            past_xstart_coeff[kk-1, :len(y_coeffs)] = np.array(y_coeffs)
+            past_epsilon_coeff[kk-1, :len(eps_coeffs)] = np.array(eps_coeffs)
+
+    print(past_xstart_coeff)
+    print(past_epsilon_coeff)
+    print(node_coeff)
+    
+    names = ["s%02d" % ii for ii in range(17, -1, -1)]
+    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names, index=names)
+    df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
+    df.to_csv("dpmsolverpp3s_%03d.csv" % (3*step))
+    print(df)
+
+    np.savez("dpmsolverpp3s_%03d.npz" % (3*step), past_xstart_coeff=past_xstart_coeff,
+             past_epsilon_coeff=past_epsilon_coeff, node_coeff=node_coeff)
+    return
+   
     
 if __name__ == "__main__":
-    sampling_tx() 
- 
+    # sampling_dpmsolver_2s_tx()
+    sampling_dpmsolver_pp_2s_tx()
+    # sampling_dpmsolver_3s_tx()
+    # sampling_dpmsolver_pp_3s_tx()
+
     
