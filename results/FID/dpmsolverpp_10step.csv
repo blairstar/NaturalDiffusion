@@ -1,0 +1,9 @@
+,num_step,method,mult,time,thresh,order,fid
+0,10,dpmsolver++,multistep,time_quadratic,,2,4.641124070421995
+1,10,dpmsolver++,multistep,time_quadratic,dynamic_thresholding,2,4.665239674121153
+2,10,dpmsolver++,singlestep,time_quadratic,,3,4.895351144226822
+3,10,dpmsolver++,singlestep,time_quadratic,dynamic_thresholding,3,4.906745093160623
+4,10,dpmsolver++,singlestep,time_quadratic,,2,8.024414425986208
+5,10,dpmsolver++,multistep,time_quadratic,,3,8.026204186273333
+6,10,dpmsolver++,multistep,time_quadratic,dynamic_thresholding,3,8.034599616994
+7,10,dpmsolver++,singlestep,time_quadratic,dynamic_thresholding,2,8.089959645749218
