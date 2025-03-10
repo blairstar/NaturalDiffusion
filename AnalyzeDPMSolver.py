@@ -1,3 +1,5 @@
+# # Part of the code is copied from https://github.com/LuChengTHU/dpm-solver
+
 import numpy as np
 from sympy import symbols
 import sympy

@@ -15,6 +15,7 @@ pd.set_option('display.max_rows', None)
 
 
 
+# # copied from https://github.com/openai/improved-diffusion
 def space_timesteps(num_timesteps, section_counts):
     """
     Create a list of timesteps to use from an original diffusion process,

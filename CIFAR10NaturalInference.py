@@ -1,6 +1,8 @@
 
-
 import os, sys
+sys.path.append("deps")
+sys.path.append("deps/score_sde_pytorch")
+
 from models import ncsnpp
 from models import ddpm as ddpm_model
 from sde_lib import VPSDE
@@ -10,7 +12,6 @@ import datasets
 from configs.vp import cifar10_ddpmpp_continuous as configs
 import matplotlib.pyplot as plt
 
-sys.path.append("../../")
 import th_deis as tdeis
 import jax.random as random
 import cv2
@@ -34,15 +35,8 @@ from dpm_solver_pytorch import NoiseScheduleVP, DPM_Solver
 import itertools
     
 
-
 np.set_printoptions(suppress=True, linewidth=600, precision=2)
 torch.set_printoptions(sci_mode=False, linewidth=600, precision=2)
-
-
-parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-# parser.add_argument("--flag", type=str, default="flag", help="flag")
-parser.add_argument("--tab", type=str, default="tab.npz", help="none")
-args = parser.parse_args()
 
 
 def get_activation(imgs, model, dims, device):
@@ -127,7 +121,7 @@ def show_samples(x, path, config):
 def deis_sampling_tx():
     # # to do: set checkpoint path and batch_size
     batch_size = 500
-    ckpt_filename = os.path.expanduser("../../exp/checkpoint_8.pth")
+    ckpt_filename = os.path.expanduser("deps/score_sde_pytorch/checkpoint_8.pth")
     assert os.path.exists(ckpt_filename)
     
     config = configs.get_config()
@@ -244,9 +238,10 @@ def weighted_sum(past_x0_coeff, seq_x0):
 
 @torch.no_grad()
 def natural_inference_tx():
-    # # to do: set checkpoint path and batch_size
+    # # to do: set checkpoint path, batch_size and weight_path
     batch_size = 500
-    ckpt_filename = os.path.expanduser("../../exp/checkpoint_8.pth")
+    ckpt_filename = os.path.expanduser("deps/score_sde_pytorch/checkpoint_8.pth")
+    weight_path = "weights/step_5_weight_00.npz"
     assert os.path.exists(ckpt_filename)
     
     config = configs.get_config()
@@ -273,11 +268,10 @@ def natural_inference_tx():
     score_fn = mutils.get_score_fn(sde, score_model, train=False, continuous=True)
     
     # # Be careful! Make sure that the past_x0_coeff have been normalized to the marginal coefficients
-    # past_x0_coeff, past_eps_coeff, node_coeff = np.load("tab_10.npz").values()
-    past_x0_coeff, past_eps_coeff, node_coeff = np.load(args.tab).values()
+    past_x0_coeff, past_eps_coeff, node_coeff = np.load(weight_path).values()
    
     print(past_x0_coeff/np.diag(past_x0_coeff)[:, None])
-    print(args.tab)
+    print(weight_path)
     
     ts = node_coeff[:, 0]
     num_step = ts.shape[0] - 1
@@ -313,7 +307,7 @@ def natural_inference_tx():
     all_batch = torch.concatenate(all_batch)
     fid_value = calc_fid(all_batch, "./cifar10_mu_sigma.npz", config.device)
     print(fid_value)
-    print(args.tab)
+    print(weight_path)
     print(past_x0_coeff/np.diag(past_x0_coeff)[:, None])
     
     return
@@ -334,7 +328,7 @@ def get_noise_fn(model_fn):
 def dpm_solver_tx():
     # # to do: set checkpoint path and batch_size
     batch_size = 500
-    ckpt_filename = os.path.expanduser("../../exp/checkpoint_8.pth")
+    ckpt_filename = os.path.expanduser("deps/score_sde_pytorch/checkpoint_8.pth")
     assert os.path.exists(ckpt_filename)
     
     config = configs.get_config()
