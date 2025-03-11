@@ -1,0 +1,14 @@
+
+torch
+torchvision
+pandas
+sympy
+pytorch-fid
+pillow
+jax
+jaxlib
+opencv-python
+scienceplots
+matplotlib
+tqdm
+diffusers

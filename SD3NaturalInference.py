@@ -3,15 +3,21 @@ import copy
 import cv2
 
 from diffusers import StableDiffusion3Pipeline
-from Analyze import get_data, make_path, save_image, reshape, center_crop_arr, interleave, gaussian_blur
 from PIL import Image
 import torch
 import numpy as np
 import json
 import pandas as pd
+import os
 
 torch.backends.cuda.matmul.allow_tf32 = False
 torch.backends.cudnn.allow_tf32 = False
+
+
+def make_path(path):
+    path = os.path.abspath(path)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    return path
 
 
 def pad(img, length=1):
