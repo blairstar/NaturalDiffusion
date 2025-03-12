@@ -20,6 +20,11 @@ def make_path(path):
     return path
 
 
+def interleave(seq_img):
+    images = torch.stack(seq_img, dim=1).flatten(0, 1)
+    return images.contiguous()
+
+
 def pad(img, length=1):
     img = np.pad(img, ((length, length), (length, length), (0, 0)), mode='constant', constant_values=0)
     return img

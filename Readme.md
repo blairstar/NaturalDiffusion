@@ -5,23 +5,21 @@
 </div>
 </br>
 
---------------------
-</br>
 
 
 ![NaturalDiffusion](inference_framework.png)
 
 
-## A Unified Diffusion Model Inference Framework - Natural Inference
+### A Unified Diffusion Model Inference Framework - Natural Inference
 
-**Natural Inference** is a simple framework that unifies most mainstream inference methods, including at least:
+**Natural Inference** is a straightforward and general inference framework that does not rely on any probability concepts. It unifies most mainstream inference methods, including at least:
 
-- [x] DDPM Ancestral Sampling
-- [x] DDIM
-- [x] SDE Euler
-- [x] ODE Euler
-- [x] Heun
-- [x] DPMSolver
-- [x] DPMSolver++
-- [x] DEIS
-- [x] Flow Matching Euler
+- &#x2705; DDPM Ancestral Sampling
+- &#x2705; DDIM
+- &#x2705; SDE Euler
+- &#x2705; ODE Euler
+- &#x2705; Heun
+- &#x2705; DPMSolver
+- &#x2705; DPMSolver++
+- &#x2705; DEIS
+- &#x2705; Flow Matching Euler
