@@ -116,7 +116,12 @@ def sd_euler_natural_inference_tx():
         fuse_xstarts = model_inputs - sigmas[i] * fuse_outputs
             
         seq_xstarts.append([-1*(sigmas[i+1]-sigmas[i]), fuse_xstarts])        # (predict_xstart weight, predict_xstart)
+        
+        # update next x_t in natural inference
         curr_outputs = sigmas[i+1]*noises + (1-sigmas[i+1])*euler_weighted_sum(seq_xstarts)[1]
+        
+        # update next x_t with vanilla euler method
+        # curr_outputs = model_inputs + (sigmas[i+1]-sigmas[i]) * fuse_outputs
 
         output_xstart = euler_weighted_sum(seq_xstarts, cliplen)[1]
         outputs.append(interleave([input_xstarts, null_xstarts, text_xstarts, fuse_xstarts, output_xstart]))
