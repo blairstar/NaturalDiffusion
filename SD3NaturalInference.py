@@ -123,8 +123,8 @@ def sd_euler_natural_inference_tx():
         # update next x_t with vanilla euler method
         # curr_outputs = model_inputs + (sigmas[i+1]-sigmas[i]) * fuse_outputs
 
-        output_xstart = euler_weighted_sum(seq_xstarts, cliplen)[1]
-        outputs.append(interleave([input_xstarts, null_xstarts, text_xstarts, fuse_xstarts, output_xstart]))
+        output_xstarts = euler_weighted_sum(seq_xstarts, cliplen)[1]
+        outputs.append(interleave([input_xstarts, null_xstarts, text_xstarts, fuse_xstarts, output_xstarts]))
 
     img_alls = []
     outputs = torch.cat(outputs, dim=0)
@@ -134,11 +134,18 @@ def sd_euler_natural_inference_tx():
         imgs = pipe.image_processor.postprocess(imgs, output_type="pil")
         img_alls.extend(imgs)
     
-    path = make_path("SD3/results/euler_clip0.png")
+    # due to the large number of images, this step takes a long time.
+    path = make_path("results/sd3/euler_seq_clip0.png")
     save_imgs(img_alls, path, (256, 256), 20)
+
+    output_xstarts = (output_xstarts / pipe.vae.config.scaling_factor) + pipe.vae.config.shift_factor
+    images = pipe.vae.decode(output_xstarts, return_dict=False)[0]
+    images = pipe.image_processor.postprocess(images, output_type="pil")
+
+    img_all = np.hstack([np.array(image)[:, :, ::-1] for image in images])
+    cv2.imwrite("results/sd3/euler_sgl_clip0.png", img_all)
  
     return
-
 
 
 def weighted_sum(seq_xstarts, weights=None):
@@ -176,10 +183,11 @@ def sd_natural_inference_tx():
     timesteps, sigmas = pipe.scheduler.timesteps, pipe.scheduler.sigmas
     timesteps, sigmas = timesteps.to(device), sigmas.to(device)
     
+    dir_path = "./weights"
     weight_names = ["weights_28.csv", "weights_28_sharp_v10.csv"]
     
     for weight_name in weight_names:
-        weights = pd.read_csv(weight_name, index_col=0).to_numpy()
+        weights = pd.read_csv(os.path.join(dir_path, weight_name), index_col=0).to_numpy()
 
         outputs = []
         seq_xstarts = []
@@ -216,8 +224,9 @@ def sd_natural_inference_tx():
             imgs = pipe.image_processor.postprocess(imgs, output_type="pil")
             img_alls.extend(imgs)
 
-        path = make_path("results/seq_%s.png"%(weight_name[:-4]))
+        path = make_path("results/sd3/seq_%s.png"%(weight_name[:-4]))
         
+        # due to the large number of images, this step takes a long time.
         save_imgs(img_alls, path, (256, 256), 20)
 
         output_xstarts = (output_xstarts/pipe.vae.config.scaling_factor) + pipe.vae.config.shift_factor
@@ -225,7 +234,7 @@ def sd_natural_inference_tx():
         images = pipe.image_processor.postprocess(images, output_type="pil")
         
         img_all = np.hstack([np.array(image)[:, :, ::-1] for image in images])
-        cv2.imwrite("SD3/results/sgl_%s.png"%(weight_name[:-4]), img_all)
+        cv2.imwrite("results/sd3/sgl_%s.png"%(weight_name[:-4]), img_all)
         
     return
 
