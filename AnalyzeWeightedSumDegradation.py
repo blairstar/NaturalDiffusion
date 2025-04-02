@@ -4,6 +4,84 @@ import torch
 import glob
 import pandas as pd
 import numpy as np
+import copy
+from PIL import Image
+
+from diffusers.models import AutoencoderKL
+
+
+def center_crop_arr(pil_image, image_size):
+    """
+    Center cropping implementation from ADM.
+    https://github.com/openai/guided-diffusion/blob/8fb3ad9197f16bbc40620447b2742e13458d2831/guided_diffusion/image_datasets.py#L126
+    """
+    while min(*pil_image.size) >= 2 * image_size:
+        pil_image = pil_image.resize(
+            tuple(x // 2 for x in pil_image.size), resample=Image.BOX
+        )
+
+    scale = image_size / min(*pil_image.size)
+    pil_image = pil_image.resize(
+        tuple(round(x * scale) for x in pil_image.size), resample=Image.BICUBIC
+    )
+
+    arr = np.array(pil_image)
+    crop_y = (arr.shape[0] - image_size) // 2
+    crop_x = (arr.shape[1] - image_size) // 2
+    return Image.fromarray(arr[crop_y: crop_y + image_size, crop_x: crop_x + image_size])
+
+
+def get_feature(vae, dir_path, size=256, flip=False, device="cuda:0"):
+    images = []
+    for path in glob.glob(os.path.join(dir_path, "*")):
+        image = Image.open(path).convert('RGB')
+        image = center_crop_arr(image, size)
+        image = np.array(image)
+        image = np.fliplr(image) if flip else image
+        images.append(image)
+    images = np.stack(images)
+
+    images = torch.from_numpy(images).to(dtype=torch.float32)
+    images = (images / 255 - 0.5) / 0.5
+    images = images.permute(0, 3, 1, 2)
+
+    bz = 16
+    feats = []
+    for ii in range(0, images.shape[0], bz):
+        sub_images = copy.deepcopy(images[ii:ii + bz])
+        with torch.no_grad():
+            sub_feats = vae.encode(sub_images.to(device)).latent_dist.sample().mul_(0.18215).cpu()
+        feats.append(sub_feats)
+    feats = torch.cat(feats)
+
+    return feats
+
+
+def get_batch_feature_tx():
+    device = "cuda"
+    vae = AutoencoderKL.from_pretrained(f"../sd-vae-ft-ema").to(device)
+    vae.eval()
+    
+    # # to do:
+    # # Specify the path of the ImageNet dataset, with each class in a separate folder.
+    dir_path = ""
+    size = 256
+    
+    rng = np.random.default_rng(10)
+    paths = sorted(glob.glob(os.path.join(dir_path, "*")))
+
+    rng.shuffle(paths)
+    rng.shuffle(paths)
+    rng.shuffle(paths)
+
+    for path in paths:
+        print(path)
+        name = os.path.basename(path)
+        feats = get_feature(vae, path, size, False, device)
+        feats = feats.to(dtype=torch.bfloat16, device="cpu")
+        torch.save(feats, "latents_%03d/%s.pt" % (size, name))
+
+    return
 
 
 def add_vp_noise(samples, alphas_bar, t, seed=200):

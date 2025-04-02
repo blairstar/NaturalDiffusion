@@ -5,7 +5,8 @@ from sympy import symbols
 import sympy
 import torch
 import pandas as pd
-import os
+import os, sys
+sys.path.append("deps")
 
 from Utils import draw_marginal_coeff, CAnalyzer
 

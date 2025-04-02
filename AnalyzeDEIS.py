@@ -1,5 +1,8 @@
 # # Part of the code is copied from  https://github.com/qsh-zh/deis
 
+import os, sys
+sys.path.append("deps")
+
 import numpy as np
 np.set_printoptions(suppress=True, linewidth=200, precision=3)
 
@@ -8,15 +11,11 @@ from th_deis.sampler import get_sampler_t_ab, get_sampler_rho_ab
 from th_deis.sde import get_rev_ts
 from th_deis.multistep import get_ab_eps_coef
 import jax.numpy as jnp
-from th_deis.helper import jax2th, th2jax
 import sympy
 from sympy import symbols
 import functools
-np.set_printoptions(suppress=True, linewidth=300, precision=3)
 from collections import OrderedDict
 import pandas as pd
-
-import os
 
 from Utils import draw_marginal_coeff, CAnalyzer
 

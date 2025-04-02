@@ -65,7 +65,6 @@ def euler_weighted_sum(seq_xstarts, cliplen=0):
     return acc_xstarts, equiv_xstarts
 
 
-
 '''
 Here, we calculate the coefficient matrix with the following way:
 x_N = \epsilon \\
@@ -73,6 +72,7 @@ x_{N-1} = \epsilon + (\sigma_{N-1}-\sigma_{N})(\epsilon - x^{N}_0) \\
 x_{N-2} = \epsilon + (\sigma_{N-1}-\sigma_{N})(\epsilon - x^{N}_0) + (\sigma_{N-2}-\sigma_{N-1})(\epsilon - x^{N-1}_0) \\
 ...
 where x^{N}_0 is the predict xstart in the Nth discrete time point
+This way is slightly different from the one in the paper but produces the same results.
 '''
 @torch.no_grad()
 def sd_euler_natural_inference_tx():
@@ -81,6 +81,8 @@ def sd_euler_natural_inference_tx():
     pipe = StableDiffusion3Pipeline.from_pretrained("stabilityai/stable-diffusion-3-medium-diffusers",
                                                     torch_dtype=dtype, local_files_only=True).to(device)
 
+    is_vanilla_update = False
+    
     n = 4
     prompts = [prompt]*n
     generator = torch.Generator("cuda")
@@ -117,11 +119,10 @@ def sd_euler_natural_inference_tx():
             
         seq_xstarts.append([-1*(sigmas[i+1]-sigmas[i]), fuse_xstarts])        # (predict_xstart weight, predict_xstart)
         
-        # update next x_t in natural inference
-        curr_outputs = sigmas[i+1]*noises + (1-sigmas[i+1])*euler_weighted_sum(seq_xstarts)[1]
-        
-        # update next x_t with vanilla euler method
-        # curr_outputs = model_inputs + (sigmas[i+1]-sigmas[i]) * fuse_outputs
+        if is_vanilla_update:   # update next x_t with vanilla euler
+            curr_outputs = model_inputs + (sigmas[i+1]-sigmas[i]) * fuse_outputs
+        else:                   # update next x_t with natural inference
+            curr_outputs = sigmas[i+1] * noises + (1-sigmas[i+1]) * euler_weighted_sum(seq_xstarts)[1]
 
         output_xstarts = euler_weighted_sum(seq_xstarts, cliplen)[1]
         outputs.append(interleave([input_xstarts, null_xstarts, text_xstarts, fuse_xstarts, output_xstarts]))
@@ -184,7 +185,7 @@ def sd_natural_inference_tx():
     timesteps, sigmas = timesteps.to(device), sigmas.to(device)
     
     dir_path = "./weights"
-    weight_names = ["weights_28.csv", "weights_28_sharp_v10.csv"]
+    weight_names = ["sd3_step_28_weight.csv", "sd3_step_28_weight_sharp.csv"]
     
     for weight_name in weight_names:
         weights = pd.read_csv(os.path.join(dir_path, weight_name), index_col=0).to_numpy()

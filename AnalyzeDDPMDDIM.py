@@ -4,12 +4,14 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 import scienceplots
+import sympy
+from sympy import symbols
 
 
-from Utils import draw_marginal_coeff
+from Utils import draw_marginal_coeff, CAnalyzer
 
 
-np.set_printoptions(suppress=True, linewidth=200, precision=3)
+np.set_printoptions(suppress=True, linewidth=200, precision=4)
 pd.set_option('display.max_colwidth', None)
 pd.set_option('display.max_rows', None)
 
@@ -88,10 +90,10 @@ def create_ddpm_coeff():
     return coeff_all
 
 
-def skip_ddpm_coeff(coeff_all, skip_step=10):
+def skip_ddpm_coeff(coeff_all, num_step=20):
     alphas, alphas_bar, log_var, coeff_xt2x0, coeff_eps2x0, coeff_xt, coeff_x0 = coeff_all
 
-    roi_idxs = space_timesteps(1000, str(int(1000/skip_step)))
+    roi_idxs = space_timesteps(1000, str(int(num_step)))
     roi_idxs = sorted(roi_idxs)
 
     skip_alphas_bar = alphas_bar[roi_idxs]
@@ -119,13 +121,12 @@ def skip_ddpm_coeff(coeff_all, skip_step=10):
     return skip_coeff_all, roi_idxs
 
 
-def ddpm_analyze_coeff(skip=20):
+def ddpm_analyze_coeff(num_step=20):
     coeff_all = create_ddpm_coeff()
-    skip_coeff_all, skip_idxs = skip_ddpm_coeff(coeff_all, skip)
+    skip_coeff_all, skip_idxs = skip_ddpm_coeff(coeff_all, num_step)
     skip_alphas, skip_alphas_bar, skip_log_var, _, _, skip_coeff_xt, skip_coeff_x0 = skip_coeff_all
     skip_std = np.sqrt(np.exp(skip_log_var))
     
-    num_step = int(1000 / skip)
     arr_eps, arr_xz = np.zeros([num_step, num_step + 1]), np.zeros([num_step, num_step])
     node_coeff = np.zeros([num_step, 3])
 
@@ -169,7 +170,7 @@ def ddpm_analyze_coeff(skip=20):
 
     node_coeff = np.vstack([np.array([999, 0.0, 1.0]), node_coeff])
     
-    draw_marginal_coeff(arr_xz, arr_eps, node_coeff, "results/ddpm/ddpm_%03d.jpg"%num_step) 
+    draw_marginal_coeff(arr_xz, arr_eps, node_coeff, "results/ddpm/ddpm_%03d.jpg"%num_step)
 
     np.savez("results/ddpm/ddpm_%03d.npz" % num_step, past_x0_coeff=arr_xz, past_eps_coeff=arr_eps, node_coeff=node_coeff)
     print(arr_xz)
@@ -178,6 +179,88 @@ def ddpm_analyze_coeff(skip=20):
     return
 
 
+def ddpm_simpy_analyze_coeff(num_step=20):
+    coeff_all = create_ddpm_coeff()
+    skip_coeff_all, skip_idxs = skip_ddpm_coeff(coeff_all, num_step)
+    skip_alphas, skip_alphas_bar, skip_log_var, skip_coeff_xt2x0, skip_coeff_eps2x0, skip_coeff_xt, skip_coeff_x0 = skip_coeff_all
+    skip_stds = np.sqrt(np.exp(skip_log_var))
+
+    analyzer = CAnalyzer()
+
+    # reverse sequence
+    # when step_idx = -1, skip_alphas_bar = 1, this means that denoise to zero.
+    step_idxs = skip_idxs[::-1] + [-1]
+    alphas_bar = np.append(skip_alphas_bar[::-1], 1)
+    coeff_xt = np.append(skip_coeff_xt[::-1], np.nan)
+    coeff_x0 = np.append(skip_coeff_x0[::-1], np.nan)
+    stds = np.append(skip_stds[::-1], 0)
+
+    t = step_idxs[0]
+    eps_t = symbols("eps_%03d"%t)
+    analyzer.add_item("eps_%03d"%t, eps_t)
+    analyzer.add_item("x_%03d"%t, eps_t)
+    
+    for ii in range(0, num_step):
+        s, t = step_idxs[ii], step_idxs[ii+1]
+        x_s = analyzer.get_item("x_%03d"%s)
+        
+        y_s = symbols("y_%03df"%s)            # y_s is predicted x_0 in the s_th step
+        analyzer.add_item("y_%03d"%s, y_s)
+        
+        # calculate posterior's mean
+        mean_t = coeff_xt[ii] * x_s + coeff_x0[ii] * y_s
+        
+        eps_t = symbols("eps_%03d"%t)
+        analyzer.add_item("eps_%03d"%t, eps_t)
+        
+        # sample x_t from posterior's mean
+        x_t = mean_t + stds[ii]*eps_t
+        
+        analyzer.add_item("x_%03d"%t, x_t)
+
+    ys = analyzer.get_y_symbols()
+    epss = analyzer.get_eps_symbols()
+
+    past_xstart_coeff = np.zeros([num_step, num_step])
+    past_epsilon_coeff = np.zeros([num_step, num_step+1])
+    node_coeff = np.zeros([num_step+1, 3])
+
+    for kk, t in enumerate(step_idxs):
+        x_t = analyzer.get_item("x_%03d"%t)
+        
+        true_y_coeff = np.sqrt(alphas_bar[kk])
+        true_eps_coeff = np.sqrt(1 - true_y_coeff**2)
+
+        print("t", t)
+        y_coeffs = analyzer.show_symbol_coeff(x_t, ys)
+        print("y result", np.sum(y_coeffs), true_y_coeff)
+
+        eps_coeffs = analyzer.show_symbol_coeff(x_t, epss)
+        print("eps result", np.linalg.norm(eps_coeffs), true_eps_coeff)
+        print("")
+
+        node_coeff[kk, :] = np.array([t, true_y_coeff, true_eps_coeff])
+        if kk > 0:
+            past_xstart_coeff[kk-1, :len(y_coeffs)] = np.array(y_coeffs)
+            past_epsilon_coeff[kk-1, :len(eps_coeffs)] = np.array(eps_coeffs)
+
+    names = ["%03d" % node_coeff[ii + 1, 0] for ii in range(0, num_step)]
+    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names, index=names)
+    df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
+    df.to_csv("results/ddpm/ddpm_simpy_%03d.csv" % num_step)
+    print(df)
+
+    draw_marginal_coeff(past_xstart_coeff, past_epsilon_coeff,
+                        node_coeff, "results/ddpm/ddpm_simpy_%03d.jpg" % num_step)
+
+    np.savez("results/ddpm/ddpm_simpy_%s.npz"%num_step, past_xstart_coeff=past_xstart_coeff,
+             past_epsilon_coeff=past_epsilon_coeff, node_coeff=node_coeff)
+    
+    print(past_xstart_coeff)
+    print(past_epsilon_coeff)
+    print(node_coeff)
+
+    return
 
 
 def create_ddim_coeff():
@@ -199,10 +282,10 @@ def create_ddim_coeff():
     return coeff_all
 
 
-def skip_ddim_coeff(coeff_all, skip_step=10):
+def skip_ddim_coeff(coeff_all, num_step=10):
     alphas, alphas_bar, coeff_xt2x0, coeff_eps2x0, coeff_xt, coeff_x0 = coeff_all
 
-    roi_idxs = space_timesteps(1000, str(int(1000/skip_step)))
+    roi_idxs = space_timesteps(1000, str(int(num_step)))
     roi_idxs = sorted(roi_idxs)
 
     skip_alphas_bar = alphas_bar[roi_idxs]
@@ -227,12 +310,11 @@ def skip_ddim_coeff(coeff_all, skip_step=10):
     return skip_coeff_all, roi_idxs
 
 
-def ddim_analyze_coeff(skip=20):
+def ddim_analyze_coeff(num_step=20):
     coeff_all = create_ddim_coeff()
-    skip_coeff_all, skip_idxs = skip_ddim_coeff(coeff_all, skip)
+    skip_coeff_all, skip_idxs = skip_ddim_coeff(coeff_all, num_step)
     skip_alphas, skip_alphas_bar, _, _, skip_coeff_xt, skip_coeff_x0 = skip_coeff_all
 
-    num_step = int(1000/skip)
     arr_eps, arr_xz = np.zeros([num_step, num_step+1]), np.zeros([num_step, num_step])
     node_coeff = np.zeros([num_step, 3])
 
@@ -271,25 +353,112 @@ def ddim_analyze_coeff(skip=20):
 
     node_coeff = np.vstack([np.array([999, 0.0, 1.0]), node_coeff])
     
-    draw_marginal_coeff(arr_xz, arr_eps, node_coeff, "results/ddim/ddim_%03d.jpg"%num_step) 
+    draw_marginal_coeff(arr_xz, arr_eps, node_coeff, "results/ddim/ddim_%03d.jpg"%num_step)
     
     np.savez("results/ddim/ddim_%03d.npz" % num_step, past_x0_coeff=arr_xz, past_eps_coeff=arr_eps, node_coeff=node_coeff)
     print(arr_xz)
     print(arr_eps)
-     
+    print(node_coeff)
+
     return
 
 
+def ddim_simpy_analyze_coeff(num_step=20):
+    coeff_all = create_ddim_coeff()
+    skip_coeff_all, skip_idxs = skip_ddim_coeff(coeff_all, num_step)
+    skip_alphas, skip_alphas_bar, skip_coeff_xt2x0, skip_coeff_eps2x0, skip_coeff_xt, skip_coeff_x0 = skip_coeff_all
+
+    analyzer = CAnalyzer()
+    
+    # reverse sequence
+    # when step_idx = -1, skip_alphas_bar = 1, this means that denoise to zero.
+    step_idxs = skip_idxs[::-1] + [-1]
+    alphas_bar = np.append(skip_alphas_bar[::-1], 1)
+    coeff_xt = np.append(skip_coeff_xt[::-1], np.nan)
+    coeff_x0 = np.append(skip_coeff_x0[::-1], np.nan)
+
+    t = step_idxs[0]
+    eps_t = symbols("eps_%03d" % t)
+    analyzer.add_item("eps_%03d" % t, eps_t)
+    analyzer.add_item("x_%03d" % t, eps_t)
+
+    for ii in range(0, num_step):
+        s, t = step_idxs[ii], step_idxs[ii+1]
+        x_s = analyzer.get_item("x_%03d" % s)
+
+        y_s = symbols("y_%03df" % s)  # y_s is predicted x_0 in the s_th step
+        analyzer.add_item("y_%03d" % s, y_s)
+
+        # calculate x_t from predicted x_0 and x_{t-1}
+        x_t = coeff_xt[ii] * x_s + coeff_x0[ii] * y_s
+
+        analyzer.add_item("x_%03d" % t, x_t)
+
+    ys = analyzer.get_y_symbols()
+    epss = analyzer.get_eps_symbols()
+
+    past_xstart_coeff = np.zeros([num_step, num_step])
+    past_epsilon_coeff = np.zeros([num_step, num_step + 1])
+    node_coeff = np.zeros([num_step + 1, 3])
+
+    for kk, t in enumerate(step_idxs):
+        x_t = analyzer.get_item("x_%03d" % t)
+
+        true_y_coeff = np.sqrt(alphas_bar[kk])
+        true_eps_coeff = np.sqrt(1 - true_y_coeff ** 2)
+
+        print("t", t)
+        y_coeffs = analyzer.show_symbol_coeff(x_t, ys)
+        print("y result", np.sum(y_coeffs), true_y_coeff)
+
+        eps_coeffs = analyzer.show_symbol_coeff(x_t, epss)
+        print("eps result", np.linalg.norm(eps_coeffs), true_eps_coeff)
+        print("")
+
+        node_coeff[kk, :] = np.array([t, true_y_coeff, true_eps_coeff])
+        if kk > 0:
+            past_xstart_coeff[kk - 1, :len(y_coeffs)] = np.array(y_coeffs)
+            past_epsilon_coeff[kk - 1, :len(eps_coeffs)] = np.array(eps_coeffs)
+
+    names = ["%03d" % node_coeff[ii + 1, 0] for ii in range(0, num_step)]
+    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names, index=names)
+    df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
+    df.to_csv("results/ddim/ddim_simpy_%03d.csv" % num_step)
+    print(df)
+
+    draw_marginal_coeff(past_xstart_coeff, past_epsilon_coeff,
+                        node_coeff, "results/ddim/ddim_simpy_%03d.jpg" % num_step)
+
+    np.savez("results/ddim/ddim_simpy_%s.npz" % num_step, past_xstart_coeff=past_xstart_coeff,
+             past_epsilon_coeff=past_epsilon_coeff, node_coeff=node_coeff)
+
+    print(past_xstart_coeff)
+    print(past_epsilon_coeff)
+    print(node_coeff)
+    return
+
 
 def ddpm_analyze_coeff_tx():
-    for skip in [55.555, 41.666, 10, 2]:
-        ddpm_analyze_coeff(skip)
+    for step in [18, 24, 100, 500]:
+        ddpm_analyze_coeff(step)
     return
 
 
 def ddim_analyze_coeff_tx():
-    for skip in [55.555, 41.666, 10, 2]:
-        ddim_analyze_coeff(skip)
+    for step in [18, 24, 100, 500]:
+        ddim_analyze_coeff(step)
+    return
+
+
+def ddpm_simpy_analyze_coeff_tx():
+    for step in [18, 24, 100, 200]:
+        ddpm_simpy_analyze_coeff(step)
+    return
+
+
+def ddim_simpy_analyze_coeff_tx():
+    for step in [18, 24, 100, 200]:
+        ddim_simpy_analyze_coeff(step)
     return
 
 
@@ -308,5 +477,11 @@ def convert_npz_to_csv():
 
 
 if __name__ == "__main__":
-    ddpm_analyze_coeff_tx()
-    ddim_analyze_coeff_tx()
+    '''
+    Here, we offer two options: one is to compute directly with the analytical expression, and the other is to leverage SimPy for automatic computation.
+    For SimPy, when the number of steps exceeds 200, the computation becomes relatively slow.
+    '''
+    # ddpm_analyze_coeff_tx()
+    # ddim_analyze_coeff_tx()
+    ddpm_simpy_analyze_coeff_tx()
+    ddim_simpy_analyze_coeff_tx()
