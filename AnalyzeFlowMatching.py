@@ -44,8 +44,8 @@ def flow_analyze_coeff(num_step=50):
         print("pred: %0.4f %0.4f" % (o1, o2))
         print("true: %0.4f %0.4f" % (g1, g2))
 
-    names = ["%0.3f" % node_coeff[ii, 0] for ii in range(0, num_step)]
-    df = pd.DataFrame(arr_xz.round(3), columns=names, index=names)
+    names = ["%0.3f" % node_coeff[ii, 0] for ii in range(0, num_step+1)]
+    df = pd.DataFrame(arr_xz.round(3), columns=names[:-1], index=names[1:])
     df["sum"] = arr_xz.sum(axis=1).round(3)
     df.to_csv("results/flow_euler/flow_euler_%03d.csv" % num_step)
     print(df)

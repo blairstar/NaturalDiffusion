@@ -129,8 +129,8 @@ def sampling_tab(num_step):
     print(past_epsilon_coeff)
     print(node_coeff)
     
-    names = ["%0.3f"%node_coeff[ii+1, 0] for ii in range(0, num_step)]
-    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names, index=names)
+    names = ["%0.3f"%node_coeff[ii, 0] for ii in range(0, num_step+1)]
+    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names[:-1], index=names[1:])
     df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
     df.to_csv("results/deis/deis_tab_%03d.csv" % num_step)
     print(df)
@@ -147,6 +147,7 @@ def sampling_tab(num_step):
 def sampling_tab_tx():
     for num_step in [18, 24, 100, 200]:
         sampling_tab(num_step)
+        break
     return
 
 

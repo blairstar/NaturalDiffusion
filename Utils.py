@@ -63,5 +63,5 @@ class CAnalyzer:
             coeff = float(expr.coeff(symbol))
             coeffs.append(coeff)
             # if not np.isclose(coeff, 0):
-            #     print(symbol.name, coeff)
+                # print(symbol.name, coeff)
         return np.array(coeffs)

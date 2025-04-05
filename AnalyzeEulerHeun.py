@@ -112,8 +112,8 @@ def sampling_ode(N=50):
     print(past_epsilon_coeff)
     print(node_coeff)
 
-    names = ["%0.3f" % node_coeff[ii + 1, 0] for ii in range(0, total_step)]
-    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names, index=names)
+    names = ["%0.3f" % node_coeff[ii, 0] for ii in range(0, total_step+1)]
+    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names[:-1], index=names[1:])
     df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
     df.to_csv("results/euler_heun/ode_euler_%03d.csv" % total_step)
     print(df)
@@ -198,8 +198,8 @@ def sampling_sde(N=50):
     print(past_epsilon_coeff)
     print(node_coeff)
 
-    names = ["%0.3f" % node_coeff[ii + 1, 0] for ii in range(0, total_step)]
-    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names, index=names)
+    names = ["%0.3f" % node_coeff[ii, 0] for ii in range(0, total_step+1)]
+    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names[:-1], index=names[1:])
     df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
     df.to_csv("results/euler_heun/sde_euler_%03d.csv" % total_step)
     print(df)
@@ -298,8 +298,8 @@ def sampling_heun(N=25):
     print(past_epsilon_coeff)
     print(node_coeff)
 
-    names = ["%0.3f" % node_coeff[ii + 1, 0] for ii in range(0, total_step)]
-    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names, index=names)
+    names = ["%0.3f" % node_coeff[ii, 0] for ii in range(0, total_step+1)]
+    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names[:-1], index=names[1:])
     df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
     df.to_csv("results/euler_heun/huen_%03d.csv" % total_step)
     print(df)

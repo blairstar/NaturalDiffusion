@@ -319,8 +319,8 @@ def sampling_dpmsolver_2s(step=15):
     print(past_epsilon_coeff)
     print(node_coeff)
 
-    names = ["%0.3f"%node_coeff[ii+1, 0] for ii in range(0, total_step)]
-    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names, index=names)
+    names = ["%0.3f"%node_coeff[ii, 0] for ii in range(0, total_step+1)]
+    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names[:-1], index=names[1:])
     df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
     df.to_csv("results/dpmsolver/dpmsolver2s_%03d.csv" % total_step)
     print(df)
@@ -431,8 +431,8 @@ def sampling_dpmsolver_pp_2s(step=15):
     print(past_epsilon_coeff)
     print(node_coeff)
     
-    names = ["%0.3f"%node_coeff[ii+1, 0] for ii in range(0, total_step)]
-    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names, index=names)
+    names = ["%0.3f"%node_coeff[ii, 0] for ii in range(0, total_step+1)]
+    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names[:-1], index=names[1:])
     df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
     df.to_csv("results/dpmsolverpp/dpmsolverpp2s_%03d.csv" % total_step)
     print(df) 
@@ -559,8 +559,8 @@ def sampling_dpmsolver_3s(step=10):
     print(past_epsilon_coeff)
     print(node_coeff)
 
-    names = ["%0.3f"%node_coeff[ii+1, 0] for ii in range(0, total_step)]
-    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names, index=names)
+    names = ["%0.3f"%node_coeff[ii, 0] for ii in range(0, total_step+1)]
+    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names[1:], index=names[:-1])
     df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
     df.to_csv("results/dpmsolver/dpmsolver3s_%03d.csv" % total_step)
     print(df)
@@ -687,11 +687,11 @@ def sampling_dpmsolver_pp_3s(step=10):
     print(past_epsilon_coeff)
     print(node_coeff)
     
-    names = ["%0.3f"%node_coeff[ii+1, 0] for ii in range(0, total_step)]
-    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names, index=names)
+    names = ["%0.3f"%node_coeff[ii, 0] for ii in range(0, total_step+1)]
+    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names[:-1], index=names[1:])
     df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
     df.to_csv("results/dpmsolverpp/dpmsolverpp3s_%03d.csv" % total_step)
-    print(df) 
+    print(df)
     
     draw_marginal_coeff(past_xstart_coeff, past_epsilon_coeff,
                         node_coeff, "results/dpmsolverpp/dpmsolverpp3s_%03d.jpg"%total_step)
@@ -704,6 +704,7 @@ def sampling_dpmsolver_pp_3s(step=10):
 def sampling_dpmsolver_2s_tx():
     for step in [9, 12, 50, 100]:
         sampling_dpmsolver_2s(step)
+        break
     return
 
 
@@ -727,8 +728,8 @@ def sampling_dpmsolver_pp_3s_tx():
 
 if __name__ == "__main__":
     sampling_dpmsolver_2s_tx()
-    sampling_dpmsolver_pp_2s_tx()
-    sampling_dpmsolver_3s_tx()
-    sampling_dpmsolver_pp_3s_tx()
+    # sampling_dpmsolver_pp_2s_tx()
+    # sampling_dpmsolver_3s_tx()
+    # sampling_dpmsolver_pp_3s_tx()
 
     
