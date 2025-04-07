@@ -6,7 +6,7 @@ import sympy
 from sympy import symbols
 import pandas as pd
 
-from Utils import draw_marginal_coeff, CAnalyzer
+from Utils import CAnalyzer, save_coeff_matrix
 
 
 class VPSDE:
@@ -44,9 +44,11 @@ def score(xt, pred_x0, sigma):
     return (pred_x0-xt)/sigma**2
 
 
-def sampling_ode(N=50):
+def analyze_ode(num_step=50):
     analyzer = CAnalyzer()
 
+    N = num_step + 1
+    
     eta = 1/N
     sde = VPSDE(N=N)
     total_step = N-1
@@ -112,23 +114,15 @@ def sampling_ode(N=50):
     print(past_epsilon_coeff)
     print(node_coeff)
 
-    names = ["%0.3f" % node_coeff[ii, 0] for ii in range(0, total_step+1)]
-    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names[:-1], index=names[1:])
-    df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
-    df.to_csv("results/euler_heun/ode_euler_%03d.csv" % total_step)
-    print(df)
-
-    draw_marginal_coeff(past_xstart_coeff, past_epsilon_coeff,
-                        node_coeff, "results/euler_heun/ode_euler_%03d.jpg" % total_step)
-
-    np.savez("results/euler_heun/ode_euler_%03d.npz" % total_step, past_xstart_coeff=past_xstart_coeff,
-             past_epsilon_coeff=past_epsilon_coeff, node_coeff=node_coeff)
+    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, "./results/euler_heun", "ode_euler")
 
     return
 
 
-def sampling_sde(N=50):
+def analyze_sde(num_step=50):
     analyzer = CAnalyzer()
+    
+    N = num_step + 1
     
     eta = 1 / N
     sde = VPSDE(N=N)
@@ -194,26 +188,18 @@ def sampling_sde(N=50):
             past_xstart_coeff[kk - 1, :len(y_coeffs)] = np.array(y_coeffs)
             past_epsilon_coeff[kk - 1, :len(eps_coeffs)] = np.array(eps_coeffs)
 
+    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, "./results/euler_heun", "sde_euler")
+    
     print(past_xstart_coeff)
     print(past_epsilon_coeff)
     print(node_coeff)
-
-    names = ["%0.3f" % node_coeff[ii, 0] for ii in range(0, total_step+1)]
-    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names[:-1], index=names[1:])
-    df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
-    df.to_csv("results/euler_heun/sde_euler_%03d.csv" % total_step)
-    print(df)
-
-    draw_marginal_coeff(past_xstart_coeff, past_epsilon_coeff,
-                        node_coeff, "results/euler_heun/sde_euler_%03d.jpg" % total_step)
-
-    np.savez("results/euler_heun/sde_euler_%03d.npz" % total_step, past_xstart_coeff=past_xstart_coeff,
-             past_epsilon_coeff=past_epsilon_coeff, node_coeff=node_coeff)
+ 
     return
 
 
-def sampling_heun(N=25):
+def analyze_heun(num_step=25):
     analyzer = CAnalyzer()
+    N = num_step + 1
     
     eta = 1 / N
     sde = VPSDE(N=N)
@@ -248,7 +234,7 @@ def sampling_heun(N=25):
         velocity_s = fn_coeff_s*x_s - 0.5 * gn_coeff_s**2 * score_s
         x_t_hat = x_s + velocity_s * dt
        
-        # For the Heun algorithm, there are repeated predictions at every t, so an offset is used for differentiation.
+        # For Heun algorithm, there are double predictions at every t, so an tiny offset is used for differentiation.
         analyzer.add_item("x_%0.4f"%(t+offset), x_t_hat)
         all_time_nodes.append(t+offset)
 
@@ -294,44 +280,35 @@ def sampling_heun(N=25):
             past_xstart_coeff[kk - 1, :len(y_coeffs)] = np.array(y_coeffs)
             past_epsilon_coeff[kk - 1, :len(eps_coeffs)] = np.array(eps_coeffs)
 
+    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, "./results/euler_heun", "ode_heun")
+    
     print(past_xstart_coeff)
     print(past_epsilon_coeff)
     print(node_coeff)
-
-    names = ["%0.3f" % node_coeff[ii, 0] for ii in range(0, total_step+1)]
-    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names[:-1], index=names[1:])
-    df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
-    df.to_csv("results/euler_heun/huen_%03d.csv" % total_step)
-    print(df)
-
-    draw_marginal_coeff(past_xstart_coeff, past_epsilon_coeff,
-                        node_coeff, "results/euler_heun/heun_%03d.jpg" % total_step)
-
-    np.savez("results/euler_heun/heun_%03d.npz" % total_step, past_xstart_coeff=past_xstart_coeff,
-             past_epsilon_coeff=past_epsilon_coeff, node_coeff=node_coeff)
+ 
     return
 
 
-def sampling_heun_tx():
+def analyze_heun_tx():
     for step in [9, 12, 50, 100]:
-        sampling_heun(step)
+        analyze_heun(step)
     return
 
 
-def sampling_sde_tx():
+def analyze_sde_tx():
     for step in [18, 24, 100, 200]:
-        sampling_sde(step)
+        analyze_sde(step)
     return
 
 
-def sampling_ode_tx():
+def analyze_ode_tx():
     for step in [18, 24, 100, 200]:
-        sampling_ode(step)
+        analyze_ode(step)
     return
 
 
 if __name__ == "__main__":
-    sampling_sde_tx()
-    sampling_ode_tx()
-    sampling_heun_tx()
+    analyze_sde_tx()
+    analyze_ode_tx()
+    analyze_heun_tx()
     

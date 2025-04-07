@@ -8,7 +8,7 @@ import pandas as pd
 import os, sys
 sys.path.append("deps")
 
-from Utils import draw_marginal_coeff, CAnalyzer
+from Utils import CAnalyzer, save_coeff_matrix
 
 np.set_printoptions(suppress=True, linewidth=200, precision=3)
 
@@ -223,7 +223,7 @@ class NoiseScheduleVP:
             return t.reshape((-1,))
 
 
-def sampling_dpmsolver_2s(step=15):
+def analyze_dpmsolver_2s(step=15):
     analyzer = CAnalyzer()
     
     ns = NoiseScheduleVP('linear', continuous_beta_0=0.1, continuous_beta_1=20)
@@ -315,26 +315,16 @@ def sampling_dpmsolver_2s(step=15):
             past_xstart_coeff[kk-1, :len(y_coeffs)] = np.array(y_coeffs)
             past_epsilon_coeff[kk-1, :len(eps_coeffs)] = np.array(eps_coeffs)
 
+    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, "./results/dpmsolver", "dpmsolver2s")
+    
     print(past_xstart_coeff)
     print(past_epsilon_coeff)
-    print(node_coeff)
-
-    names = ["%0.3f"%node_coeff[ii, 0] for ii in range(0, total_step+1)]
-    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names[:-1], index=names[1:])
-    df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
-    df.to_csv("results/dpmsolver/dpmsolver2s_%03d.csv" % total_step)
-    print(df)
-    
-    draw_marginal_coeff(past_xstart_coeff, past_epsilon_coeff,
-                        node_coeff, "results/dpmsolver/dpmsolver2s_%03d.jpg"%total_step)
- 
-    np.savez("results/dpmsolver/dpmsolver2s_%03d.npz" % total_step, past_xstart_coeff=past_xstart_coeff,
-             past_epsilon_coeff=past_epsilon_coeff, node_coeff=node_coeff)
+    print(node_coeff) 
         
     return
 
 
-def sampling_dpmsolver_pp_2s(step=15):
+def analyze_dpmsolver_pp_2s(step=15):
     analyzer = CAnalyzer()
     
     ns = NoiseScheduleVP('linear', continuous_beta_0=0.1, continuous_beta_1=20)
@@ -427,25 +417,16 @@ def sampling_dpmsolver_pp_2s(step=15):
             past_xstart_coeff[kk-1, :len(y_coeffs)] = np.array(y_coeffs)
             past_epsilon_coeff[kk-1, :len(eps_coeffs)] = np.array(eps_coeffs)
 
+    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, "./results/dpmsolverpp", "dpmsolverpp2s")
+    
     print(past_xstart_coeff)
     print(past_epsilon_coeff)
     print(node_coeff)
-    
-    names = ["%0.3f"%node_coeff[ii, 0] for ii in range(0, total_step+1)]
-    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names[:-1], index=names[1:])
-    df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
-    df.to_csv("results/dpmsolverpp/dpmsolverpp2s_%03d.csv" % total_step)
-    print(df) 
-
-    draw_marginal_coeff(past_xstart_coeff, past_epsilon_coeff,
-                        node_coeff, "results/dpmsolverpp/dpmsolverpp2s_%03d.jpg"%total_step)
-    
-    np.savez("results/dpmsolverpp/dpmsolverpp2s_%03d.npz" % total_step, past_xstart_coeff=past_xstart_coeff,
-             past_epsilon_coeff=past_epsilon_coeff, node_coeff=node_coeff)
+     
     return
 
 
-def sampling_dpmsolver_3s(step=10):
+def analyze_dpmsolver_3s(step=10):
     analyzer = CAnalyzer()
 
     ns = NoiseScheduleVP('linear', continuous_beta_0=0.1, continuous_beta_1=20)
@@ -555,25 +536,16 @@ def sampling_dpmsolver_3s(step=10):
             past_xstart_coeff[kk-1, :len(y_coeffs)] = np.array(y_coeffs)
             past_epsilon_coeff[kk-1, :len(eps_coeffs)] = np.array(eps_coeffs)
 
+    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, "./results/dpmsolver", "dpmsolver3s")
+    
     print(past_xstart_coeff)
     print(past_epsilon_coeff)
     print(node_coeff)
-
-    names = ["%0.3f"%node_coeff[ii, 0] for ii in range(0, total_step+1)]
-    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names[1:], index=names[:-1])
-    df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
-    df.to_csv("results/dpmsolver/dpmsolver3s_%03d.csv" % total_step)
-    print(df)
-    
-    draw_marginal_coeff(past_xstart_coeff, past_epsilon_coeff,
-                        node_coeff, "results/dpmsolver/dpmsolver3s_%03d.jpg"%total_step)
-    
-    np.savez("results/dpmsolver/dpmsolver3s_%03d.npz" % total_step, past_xstart_coeff=past_xstart_coeff,
-             past_epsilon_coeff=past_epsilon_coeff, node_coeff=node_coeff)
+ 
     return
 
 
-def sampling_dpmsolver_pp_3s(step=10):
+def analyze_dpmsolver_pp_3s(step=10):
     analyzer = CAnalyzer()
 
     ns = NoiseScheduleVP('linear', continuous_beta_0=0.1, continuous_beta_1=20)
@@ -683,53 +655,43 @@ def sampling_dpmsolver_pp_3s(step=10):
             past_xstart_coeff[kk-1, :len(y_coeffs)] = np.array(y_coeffs)
             past_epsilon_coeff[kk-1, :len(eps_coeffs)] = np.array(eps_coeffs)
 
+    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, "./results/dpmsolverpp", "dpmsolverpp3s")
+    
     print(past_xstart_coeff)
     print(past_epsilon_coeff)
     print(node_coeff)
-    
-    names = ["%0.3f"%node_coeff[ii, 0] for ii in range(0, total_step+1)]
-    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names[:-1], index=names[1:])
-    df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
-    df.to_csv("results/dpmsolverpp/dpmsolverpp3s_%03d.csv" % total_step)
-    print(df)
-    
-    draw_marginal_coeff(past_xstart_coeff, past_epsilon_coeff,
-                        node_coeff, "results/dpmsolverpp/dpmsolverpp3s_%03d.jpg"%total_step)
-
-    np.savez("results/dpmsolverpp/dpmsolverpp3s_%03d.npz" % total_step, past_xstart_coeff=past_xstart_coeff,
-             past_epsilon_coeff=past_epsilon_coeff, node_coeff=node_coeff)
+     
     return
 
 
-def sampling_dpmsolver_2s_tx():
+def analyze_dpmsolver_2s_tx():
     for step in [9, 12, 50, 100]:
-        sampling_dpmsolver_2s(step)
-        break
+        analyze_dpmsolver_2s(step)
     return
 
 
-def sampling_dpmsolver_pp_2s_tx():
+def analyze_dpmsolver_pp_2s_tx():
     for step in [9, 12, 50, 100]:
-        sampling_dpmsolver_pp_2s(step)
+        analyze_dpmsolver_pp_2s(step)
     return
 
 
-def sampling_dpmsolver_3s_tx():
+def analyze_dpmsolver_3s_tx():
     for step in [6, 8, 33, 67]:
-        sampling_dpmsolver_3s(step)
+        analyze_dpmsolver_3s(step)
     return
 
 
-def sampling_dpmsolver_pp_3s_tx():
+def analyze_dpmsolver_pp_3s_tx():
     for step in [6, 8, 33, 67]:
-        sampling_dpmsolver_pp_3s(step)
+        analyze_dpmsolver_pp_3s(step)
     return
 
 
 if __name__ == "__main__":
-    sampling_dpmsolver_2s_tx()
-    # sampling_dpmsolver_pp_2s_tx()
-    # sampling_dpmsolver_3s_tx()
-    # sampling_dpmsolver_pp_3s_tx()
+    analyze_dpmsolver_2s_tx()
+    analyze_dpmsolver_pp_2s_tx()
+    analyze_dpmsolver_3s_tx()
+    analyze_dpmsolver_pp_3s_tx()
 
     

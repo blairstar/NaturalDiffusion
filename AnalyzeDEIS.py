@@ -17,7 +17,7 @@ import functools
 from collections import OrderedDict
 import pandas as pd
 
-from Utils import draw_marginal_coeff, CAnalyzer
+from Utils import CAnalyzer, save_coeff_matrix
 
 
 
@@ -83,13 +83,13 @@ def eps_fn(x_t, t, beta_min, beta_max, analyzer):
     return pred_eps
 
 
-def sampling_tab(num_step):
+def analyze_tab(num_step):
     analyzer = CAnalyzer()
     
-    sampling_eps, T = 0.001, 1
+    analyze_eps, T = 0.001, 1
     beta_min, beta_max = 0.1, 20
     t2alpha_fn, alpha2t_fn = tdeis.get_linear_alpha_fns(beta_min, beta_max)
-    vpsde = tdeis.VPSDE(t2alpha_fn, alpha2t_fn, sampling_eps, T)
+    vpsde = tdeis.VPSDE(t2alpha_fn, alpha2t_fn, analyze_eps, T)
     
     eps_fn_partial = functools.partial(eps_fn, beta_min=beta_min, beta_max=beta_max)
     t_ab_fn, rev_ts = get_sampler_t_ab(vpsde, eps_fn_partial, "t", 2, num_step, ab_order=3, analyzer=analyzer)
@@ -124,32 +124,21 @@ def sampling_tab(num_step):
         if not np.isclose(t, 1.0):
             past_xstart_coeff[kk-1, :len(y_coeffs)] = np.array(y_coeffs)
             past_epsilon_coeff[kk-1, :len(eps_coeffs)] = np.array(eps_coeffs)
+
+    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, "./results/deis", "deis_tab")
     
     print(past_xstart_coeff)
     print(past_epsilon_coeff)
     print(node_coeff)
     
-    names = ["%0.3f"%node_coeff[ii, 0] for ii in range(0, num_step+1)]
-    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names[:-1], index=names[1:])
-    df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
-    df.to_csv("results/deis/deis_tab_%03d.csv" % num_step)
-    print(df)
-
-    draw_marginal_coeff(past_xstart_coeff, past_epsilon_coeff,
-                        node_coeff, "results/deis/deis_tab_%03d.jpg"%num_step)
-    
-    np.savez("results/deis/deis_tab_%s.npz"%num_step, past_xstart_coeff=past_xstart_coeff,
-             past_epsilon_coeff=past_epsilon_coeff, node_coeff=node_coeff)
-    
     return
 
 
-def sampling_tab_tx():
+def analyze_tab_tx():
     for num_step in [18, 24, 100, 200]:
-        sampling_tab(num_step)
-        break
+        analyze_tab(num_step)
     return
 
 
 if __name__ == "__main__":
-    sampling_tab_tx()
+    analyze_tab_tx()

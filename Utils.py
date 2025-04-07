@@ -27,6 +27,32 @@ def draw_marginal_coeff(past_x0_coeff, past_eps_coeff, node_coeff, path):
     return
 
 
+def save_coeff_matrix(past_x0_coeff, past_eps_coeff, node_coeff, output_dir, prefix):
+    num_step = past_x0_coeff.shape[0]
+    csv_path = os.path.join(output_dir, "%s_%03d.csv"%(prefix, num_step))
+    jpg_path = csv_path.replace(".csv", ".jpg")
+    npz_path = csv_path.replace(".csv", ".npz")
+    
+    if node_coeff[:, 0].mean() > 1:
+        # discrete integer time step [0, 999]
+        names = ["%03d" % node_coeff[ii, 0] for ii in range(0, num_step+1)]
+    else:
+        # continuous float time step [0, 1]
+        names = ["%0.3f" % node_coeff[ii, 0] for ii in range(0, num_step+1)]
+
+    df = pd.DataFrame(past_x0_coeff.round(3), columns=names[:-1], index=names[1:])
+    df["sum"] = past_x0_coeff.sum(axis=1).round(3)
+    df.to_csv(os.path.join(output_dir, "%s_%03d.csv"%(prefix, num_step)))
+
+    draw_marginal_coeff(past_x0_coeff, past_eps_coeff, node_coeff, jpg_path)
+
+    np.savez(npz_path, past_xstart_coeff=past_x0_coeff, past_epsilon_coeff=past_eps_coeff, node_coeff=node_coeff)
+    
+    print(df)
+    
+    return
+
+
 class CAnalyzer:
     def __init__(self):
         self.expr_pool = {}

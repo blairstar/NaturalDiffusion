@@ -71,7 +71,7 @@ x_N = \epsilon \\
 x_{N-1} = \epsilon + (\sigma_{N-1}-\sigma_{N})(\epsilon - x^{N}_0) \\
 x_{N-2} = \epsilon + (\sigma_{N-1}-\sigma_{N})(\epsilon - x^{N}_0) + (\sigma_{N-2}-\sigma_{N-1})(\epsilon - x^{N-1}_0) \\
 ...
-where x^{N}_0 is the predict xstart in the Nth discrete time point
+where x^{N}_0 is the predict xstart in the N_th discrete time point
 This way is slightly different from the one in the paper but produces the same results.
 '''
 @torch.no_grad()

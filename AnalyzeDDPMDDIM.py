@@ -8,7 +8,7 @@ import sympy
 from sympy import symbols
 
 
-from Utils import draw_marginal_coeff, CAnalyzer
+from Utils import CAnalyzer, draw_marginal_coeff, save_coeff_matrix
 
 
 np.set_printoptions(suppress=True, linewidth=200, precision=4)
@@ -107,7 +107,7 @@ def skip_ddpm_coeff(coeff_all, num_step=20):
     skip_alphas_bar_prev = np.append(1.0, skip_alphas_bar[:-1])
 
     skip_var = skip_betas*(1.0-skip_alphas_bar_prev)/(1.0-skip_alphas_bar)
-    skip_log_var = np.log(np.append(skip_var[1], skip_var[1:]))
+    skip_log_var = np.log(np.append(1E-5, skip_var[1:]))
 
     skip_coeff_x0 = np.sqrt(skip_alphas_bar_prev) * skip_betas / (1 - skip_alphas_bar)
     skip_coeff_xt = np.sqrt(skip_alphas) * (1 - skip_alphas_bar_prev) / (1 - skip_alphas_bar)
@@ -164,15 +164,8 @@ def ddpm_analyze_coeff(num_step=20):
 
     node_coeff = np.vstack([np.array([999, 0.0, 1.0]), node_coeff])
     
-    names = ["%03d"%node_coeff[ii, 0] for ii in range(0, num_step+1)]
-    df = pd.DataFrame(arr_xz.round(3), columns=names[:-1], index=names[1:])
-    df["sum"] = arr_xz.sum(axis=1).round(3)
-    df.to_csv("results/ddpm/ddpm_%03d.csv" % num_step)
-    print(df)
+    save_coeff_matrix(arr_xz, arr_eps, node_coeff, "./results/ddpm", "ddpm")
 
-    draw_marginal_coeff(arr_xz, arr_eps, node_coeff, "results/ddpm/ddpm_%03d.jpg"%num_step)
-
-    np.savez("results/ddpm/ddpm_%03d.npz" % num_step, past_x0_coeff=arr_xz, past_eps_coeff=arr_eps, node_coeff=node_coeff)
     print(arr_xz)
     print(arr_eps)
     print(node_coeff)
@@ -244,18 +237,7 @@ def ddpm_simpy_analyze_coeff(num_step=20):
             past_xstart_coeff[kk-1, :len(y_coeffs)] = np.array(y_coeffs)
             past_epsilon_coeff[kk-1, :len(eps_coeffs)] = np.array(eps_coeffs)
 
-    names = ["%03d" % node_coeff[ii, 0] for ii in range(0, num_step+1)]
-    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names[:-1], index=names[1:])
-    df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
-    df.to_csv("results/ddpm/ddpm_simpy_%03d.csv" % num_step)
-    print(df)
-
-    draw_marginal_coeff(past_xstart_coeff, past_epsilon_coeff,
-                        node_coeff, "results/ddpm/ddpm_simpy_%03d.jpg" % num_step)
-
-    np.savez("results/ddpm/ddpm_simpy_%03d.npz"%num_step, past_xstart_coeff=past_xstart_coeff,
-             past_epsilon_coeff=past_epsilon_coeff, node_coeff=node_coeff)
-    
+    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, "./results/ddpm", "ddpm_simpy")
     print(past_xstart_coeff)
     print(past_epsilon_coeff)
     print(node_coeff)
@@ -347,15 +329,8 @@ def ddim_analyze_coeff(num_step=20):
 
     node_coeff = np.vstack([np.array([999, 0.0, 1.0]), node_coeff])
     
-    names = ["%03d"%node_coeff[ii, 0] for ii in range(0, num_step+1)]
-    df = pd.DataFrame(arr_xz.round(3), columns=names[:-1], index=names[1:])
-    df["sum"] = arr_xz.sum(axis=1).round(3)
-    df.to_csv("results/ddim/ddim_%03d.csv"%num_step)
-    print(df)
-
-    draw_marginal_coeff(arr_xz, arr_eps, node_coeff, "results/ddim/ddim_%03d.jpg"%num_step)
+    save_coeff_matrix(arr_xz, arr_eps, node_coeff, "./results/ddim", "ddim")
     
-    np.savez("results/ddim/ddim_%03d.npz" % num_step, past_x0_coeff=arr_xz, past_eps_coeff=arr_eps, node_coeff=node_coeff)
     print(arr_xz)
     print(arr_eps)
     print(node_coeff)
@@ -419,18 +394,8 @@ def ddim_simpy_analyze_coeff(num_step=20):
         if kk > 0:
             past_xstart_coeff[kk - 1, :len(y_coeffs)] = np.array(y_coeffs)
             past_epsilon_coeff[kk - 1, :len(eps_coeffs)] = np.array(eps_coeffs)
-
-    names = ["%03d" % node_coeff[ii, 0] for ii in range(0, num_step+1)]
-    df = pd.DataFrame(past_xstart_coeff.round(3), columns=names[:-1], index=names[1:])
-    df["sum"] = past_xstart_coeff.sum(axis=1).round(3)
-    df.to_csv("results/ddim/ddim_simpy_%03d.csv" % num_step)
-    print(df)
-
-    draw_marginal_coeff(past_xstart_coeff, past_epsilon_coeff,
-                        node_coeff, "results/ddim/ddim_simpy_%03d.jpg" % num_step)
-
-    np.savez("results/ddim/ddim_simpy_%03d.npz" % num_step, past_xstart_coeff=past_xstart_coeff,
-             past_epsilon_coeff=past_epsilon_coeff, node_coeff=node_coeff)
+    
+    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, "./results/ddim", "ddim_simpy")
 
     print(past_xstart_coeff)
     print(past_epsilon_coeff)
@@ -478,10 +443,10 @@ def convert_npz_to_csv():
 
 if __name__ == "__main__":
     '''
-    Here, we offer two options: one is to compute directly with the analytical expression, and the other is to leverage SimPy for automatic computation.
+    Here, we offer two options: one is to compute directly through the analytical expression, and the other is to leverage SimPy for automatic computation.
     For SimPy, when the number of steps exceeds 200, the computation becomes relatively slow.
     '''
-    # ddpm_analyze_coeff_tx()
-    # ddim_analyze_coeff_tx()
-    ddpm_simpy_analyze_coeff_tx()
-    ddim_simpy_analyze_coeff_tx()
+    ddpm_analyze_coeff_tx()
+    ddim_analyze_coeff_tx()
+    # ddpm_simpy_analyze_coeff_tx()
+    # ddim_simpy_analyze_coeff_tx()
