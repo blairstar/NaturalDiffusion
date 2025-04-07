@@ -9,7 +9,7 @@ from bokeh.palettes import Oranges256, Blues256
 from bokeh.models import Select, Spinner, Checkbox
 from bokeh.layouts import column, row
 from bokeh.core.enums import Dimensions
-from bokeh.plotting import output_file, save
+from bokeh.plotting import output_file, save, figure
 import numpy as np
 import os
 
@@ -24,7 +24,7 @@ def get_cmap(field_name):
     return cmap
 
 
-def get_df(path, is_row_normalized=False):
+def get_df(path):
     x0_coeff, eps_coeff, node_coeff = np.load(path).values()
 
     if node_coeff[:, 0].mean() > 1:
@@ -41,16 +41,14 @@ def get_df(path, is_row_normalized=False):
     dfepsmg = pd.DataFrame()
     dfepsmg.insert(0, "equiv", np.linalg.norm(eps_coeff, axis=1))
     dfepsmg.insert(1, "ideal", node_coeff[1:, 2])
-
-    if is_row_normalized:
-        x0_coeff = x0_coeff/np.diag(x0_coeff)[:, None]
-        eps_coeff = eps_coeff/(np.diag(eps_coeff, 1)[:, None]+1E-8)
      
     dfx0 = pd.DataFrame(data=x0_coeff, columns=time_idxs[:-1])
     dfx0.insert(0, "time", time_idxs[1:])
+    dfx0["time"] = dfx0["time"].astype(np.float32)
     
     dfeps = pd.DataFrame(data=eps_coeff, columns=time_idxs)
     dfeps.insert(0, "time", time_idxs[1:])
+    dfeps["time"] = dfeps["time"].astype(np.float32)
 
     return dfx0, dfx0mg, dfeps, dfepsmg
 
@@ -80,15 +78,14 @@ def create_coeff_pool(coeff_list_path, coeff_pool):
     df = df[df["alg"] != "ode heun"]
     
     for row in df.itertuples():
-        if row.alg not in ["ddpm"]:
-            continue
-        create_one_coeff(row.alg, row.step, row.path, False, coeff_pool)
-        create_one_coeff(row.alg, row.step, row.path, True, coeff_pool)
+        # if row.alg not in ["ddim"]:
+        #     continue
+        create_one_coeff(row.alg, row.step, row.path, coeff_pool)
     return
 
 
-def create_one_coeff(alg, step, path, is_row_normalized, coeff_pool):
-    dfx0, dfx0mg, dfeps, dfepsmg = get_df(path, is_row_normalized)
+def create_one_coeff(alg, step, path, coeff_pool):
+    dfx0, dfx0mg, dfeps, dfepsmg = get_df(path)
     
     src_x0, src_x0_mg = ColumnDataSource(dfx0), ColumnDataSource(dfx0mg)
     tc_x0, tc_x0_mg = create_table_columns(dfx0.columns), create_table_columns(dfx0mg.columns)
@@ -96,12 +93,22 @@ def create_one_coeff(alg, step, path, is_row_normalized, coeff_pool):
     src_eps, src_eps_mg = ColumnDataSource(dfeps), ColumnDataSource(dfepsmg)
     tc_eps, tc_eps_mg = create_table_columns(dfeps.columns), create_table_columns(dfepsmg.columns)
     
-    rn_flag = "normalized" if is_row_normalized else "original"
+    src_x0.data.pop("index")
+    src_x0_mg.data.pop("index")
+    src_eps.data.pop("index")
+    src_eps_mg.data.pop("index")
     
-    x0_name = "%s_%d_pred_x0_%s"%(alg, step, rn_flag)
+    pop_keys = []
+    for key in src_eps.data.keys():
+        if np.isclose(src_eps.data[key].mean(), 0):
+            pop_keys.append(key)
+    for key in pop_keys:
+        src_eps.data.pop(key)
+        
+    x0_name = "%s_%d_pred_x0"%(alg, step)
     coeff_pool[x0_name] = (src_x0, tc_x0, src_x0_mg, tc_x0_mg)
     
-    eps_name = "%s_%d_noise_%s"%(alg, step, rn_flag)
+    eps_name = "%s_%d_noise"%(alg, step)
     coeff_pool[eps_name] = (src_eps, tc_eps, src_eps_mg, tc_eps_mg)
     return
 
@@ -116,43 +123,49 @@ def create_step_options():
 def datatable_tx():
     arr_step_opts = create_step_options()
     
-    dfs = get_df("D:\\codes\\WeSee\\NaturalDiffusion\\results\\ddpm\\ddpm_simpy_010.npz")
-    dfx0, dfx0mg, dfeps, dfepsmg = dfs
-    src_x0, src_x0_mg = ColumnDataSource(dfx0), ColumnDataSource(dfx0mg)
-    src_eps, src_eps_mg = ColumnDataSource(dfeps), ColumnDataSource(dfepsmg)
-
-    tc_x0 = create_table_columns(dfx0.columns)
-    tc_x0_mg = create_table_columns(dfx0mg.columns)
-
-    tc_eps = create_table_columns(dfeps.columns)
-    tc_eps_mg = create_table_columns(dfepsmg.columns)
-
-    coeff_pool = {}
-    coeff_pool["ddpm_10_pred_x0_original"] = (src_x0, tc_x0, src_x0_mg, tc_x0_mg)
-    coeff_pool["ddpm_10_noise_original"] = (src_eps, tc_eps, src_eps_mg, tc_eps_mg)
-    coeff_pool["ddpm_10_pred_x0_normalized"] = (src_x0, tc_x0, src_x0_mg, tc_x0_mg)
-    coeff_pool["ddpm_10_noise_normalized"] = (src_eps, tc_eps, src_eps_mg, tc_eps_mg)
+    # dfs = get_df("D:\\codes\\WeSee\\NaturalDiffusion\\results\\ddpm\\ddpm_simpy_010.npz")
+    # dfx0, dfx0mg, dfeps, dfepsmg = dfs
+    # src_x0, src_x0_mg = ColumnDataSource(dfx0), ColumnDataSource(dfx0mg)
+    # src_eps, src_eps_mg = ColumnDataSource(dfeps), ColumnDataSource(dfepsmg)
+    # src_x0.data.pop("index")
+    # src_x0_mg.data.pop("index")
+    # src_eps.data.pop("index")
+    # src_eps_mg.data.pop("index")
+    # 
+    # tc_x0 = create_table_columns(dfx0.columns)
+    # tc_x0_mg = create_table_columns(dfx0mg.columns)
+    # 
+    # tc_eps = create_table_columns(dfeps.columns)
+    # tc_eps_mg = create_table_columns(dfepsmg.columns)
+    # 
+    # coeff_pool = {}
+    # coeff_pool["ddpm_10_pred_x0"] = (src_x0, tc_x0, src_x0_mg, tc_x0_mg)
+    # coeff_pool["ddpm_10_noise"] = (src_eps, tc_eps, src_eps_mg, tc_eps_mg)
     # for ii in range(200):
     #     coeff_pool["a_%d"%ii] = (src_eps, tc_eps, src_eps_mg, tc_eps_mg)
     
-    # output_file(filename="VisualizeCoeffMatrix.html", title="Visualize Coefficient Matrix")
-
-    # coeff_pool = {}
-    # create_coeff_pool("./all_coeff_matrix.csv", coeff_pool)
-    # src_x0, tc_x0, src_x0_mg, tc_x0_mg = coeff_pool["ddpm_10_pred_x0_original"]
+    output_file(filename="VisualizeCoeffMatrix.html", title="Visualize Coefficient Matrix")
+    
+    coeff_pool = {}
+    create_coeff_pool("./all_coeff_matrix.csv", coeff_pool)
+    src_x0, tc_x0, src_x0_mg, tc_x0_mg = coeff_pool["ddpm_10_pred_x0"]
     
     alg_opts = ["ddpm", "ddim", "sde euler", "ode euler", "flow match euler",
                 "deis tab3", "dpmsolver2s", "dpmsolver3s", "dpmsolver++2s", "dpmsolver++3s"]
+
+    # plot = figure(width=400, height=400)
     
     alg_sel = Select(title="select algorithm", value="ddpm", options=alg_opts)
     step_sel = Select(title="select step", value="10", options=arr_step_opts[0])
     x0_or_eps = Select(title="pred_x0 or noise", value="pred_x0", options=["pred_x0", "noise"])
     row_normalized = Select(title="row normalized", value="original", options=["original", "normalized"])
-
     col_width_spin = Spinner(title="table column width", low=20, high=120, step=2, value=40, width=100)
-    table_mat = DataTable(source=src_x0, columns=tc_x0, index_position=None, autosize_mode="none",
+    
+    src_mat = ColumnDataSource(data=copy.deepcopy(src_x0.data))
+    src_margin = ColumnDataSource(data=copy.deepcopy(src_x0_mg.data))
+    table_mat = DataTable(source=src_mat, columns=tc_x0, index_position=None, autosize_mode="none",
                           height=290, height_policy="auto", width_policy="min", min_width=440, resizable="both")
-    table_margin = DataTable(source=src_x0_mg, columns=tc_x0_mg, index_position=None, autosize_mode="none",
+    table_margin = DataTable(source=src_margin, columns=tc_x0_mg, index_position=None, autosize_mode="none",
                              height=290, height_policy="auto", width_policy="min", min_width=160)
     
     callback = CustomJS(args=dict(alg_sel=alg_sel, step_sel=step_sel, x0_or_eps=x0_or_eps,
@@ -168,7 +181,7 @@ def datatable_tx():
         var rn_flag = row_normalized.value;
         var col_width = col_width_spin.value;
         
-        if (alg == "ode heun" || alg == "dpmsolver2s" || alg == "dpmsolver++2s") {
+        if (alg == "dpmsolver2s" || alg == "dpmsolver++2s") {
             var options = arr_step_opts[1];
         }
         else if (alg == "dpmsolver3s" || alg == "dpmsolver++3s") {
@@ -181,49 +194,61 @@ def datatable_tx():
         step_sel.value = options.includes(step) ? step : options[1];
         step = step_sel.value;
         
-        name = alg + "_" + step + "_" + x0_or_eps + "_" + rn_flag;
+        name = alg + "_" + step + "_" + x0_or_eps;
         
         var src_mat = coeff_pool[name][0];
-        console.log(src_mat);
         var tc_mat = coeff_pool[name][1];
         var src_margin = coeff_pool[name][2];
         var tc_margin = coeff_pool[name][3];
         
+        var count = src_margin.data["ideal"].length;
+        var mat_keys = Object.keys(src_mat.data);
         for (let i=0; i < tc_mat.length; i++) {
             tc_mat[i].width = col_width;
+            
+            var key = tc_mat[i].field;
+            if (mat_keys.includes(key)) continue;
+            src_mat.data[key] = new Array(count).fill(0);
         }
         for (let i=0; i < tc_margin.length; i++) {
             tc_margin[i].width = col_width*2;
         }
         
-        table_mat.source = src_mat;
+        table_mat.source.data = src_mat.data;
         table_mat.columns = tc_mat;
         table_mat.min_width = Math.min(width-4*col_width, tc_mat.length*col_width);
         table_mat.height = 26*(src_mat.length+1);
         
-        table_margin.source = src_margin;
+        table_margin.source.data = src_margin.data;
         table_margin.columns = tc_margin;
         table_margin.min_width = 4*col_width
         table_margin.height = 26*(src_margin.length+1);
-        """)
-    
-    callback_alg = CustomJS(args=dict(arr_step_opts=arr_step_opts,
-                                      alg_sel=alg_sel, step_sel=step_sel, table_mat=table_mat),
-                            code="""
-        var alg = alg_sel.value;
-        var step = step_sel.value;
         
-        if (alg == "ode heun" || alg == "dpmsolver2s" || alg == "dpmsolver++2s") {
-            var options = arr_step_opts[1];
+        if (rn_flag == "original") return;
+        
+        const old_data = src_mat.data;
+        
+        const data = {};
+        for (const key in old_data) {
+            data[key] = [...old_data[key]];
         }
-        else if (alg == "dpmsolver3s" || alg == "dpmsolver++3s") {
-            var options = arr_step_opts[2];
+        
+        var keys = Object.keys(data).sort();
+        keys = keys.slice(0, -1);
+        keys.reverse();
+        var length = data[keys[0]].length;
+         
+        for (let i = 0; i < length; i++) {
+            var divisor_key = keys[i];
+            if (x0_or_eps == "noise") {
+                divisor_key = (alg == "ddpm" || alg == "sde euler") ? keys[i+1]: keys[0];
+            }
+            var divisor = data[divisor_key][i] + 0.000001;
+            for (const key of keys) {
+                data[key][i] = data[key][i]/divisor;
+            }
         }
-        else {
-            var options = arr_step_opts[0];
-        }
-        step_sel.options = options;
-        step_sel.value = options.includes(step) ? step : options[1];
+        table_mat.source.data = data;
         """)
 
     alg_sel.js_on_change("value", callback)
@@ -231,7 +256,7 @@ def datatable_tx():
     step_sel.js_on_change("value", callback)
     row_normalized.js_on_change("value", callback)
     
-    show(column(row(alg_sel, x0_or_eps, step_sel,  row_normalized, col_width_spin, width=500), row(table_mat, table_margin)))
+    save(column(row(alg_sel, x0_or_eps, step_sel,  row_normalized, col_width_spin, width=500), row(table_mat, table_margin)))
     return
 
 
