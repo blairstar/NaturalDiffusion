@@ -33,3 +33,9 @@
 - For reproducing the results in Section 5.3 - *A Way to Control Image Sharpness*. please refer to SD3NaturalInference.py.
 - For reproducing the results in Section 5.4 - *Better Coefficient Matrix*. please refer to CIFAR10NaturalInference.py.
 
+
+### Visualize Coefficient Matrix
+
+VisualizeCoeffMatrix.html is an standalone web application that can run offline in a browser.
+[![Visualze coefficient matrix](visualize/VisualizeCoeffMatrix.jpg)](https://youtu.be/2zRA1T7wC6E)
+
