@@ -39,11 +39,11 @@ def get_df(path):
         time_idxs = ["%0.3f"%x for x in node_coeff[:, 0].tolist()]
     
     dfx0mg = pd.DataFrame()
-    dfx0mg.insert(0, "equiv", np.sum(x0_coeff, axis=1))
+    dfx0mg.insert(0, "equiv(sum)", np.sum(x0_coeff, axis=1))
     dfx0mg.insert(1, "ideal", node_coeff[1:, 1])
     
     dfepsmg = pd.DataFrame()
-    dfepsmg.insert(0, "equiv", np.linalg.norm(eps_coeff, axis=1))
+    dfepsmg.insert(0, "equiv(norm)", np.linalg.norm(eps_coeff, axis=1))
     dfepsmg.insert(1, "ideal", node_coeff[1:, 2])
      
     dfx0 = pd.DataFrame(data=x0_coeff, columns=time_idxs[:-1])
@@ -63,7 +63,7 @@ def create_table_columns(columns):
         if col in ["time"]:
             formatter = NumberFormatter(format="0.[000]", background_color="pink", text_align="center")
             column = TableColumn(field=col, title=col, formatter=formatter, width=40, sortable=False)
-        elif col in ["equiv"]:
+        elif col in ["equiv(sum)", "equiv(norm)"]:
             formatter = NumberFormatter(format="0.[000]", background_color="orange", text_align="center")
             column = TableColumn(field=col, title=col, formatter=formatter, width=80, sortable=False)
         elif col in ["ideal"]:
@@ -167,7 +167,7 @@ def datatable_tx():
     schema_figure.grid.visible = False
     schema_figure.toolbar_location = None
     
-    src_line = ColumnDataSource(data={"time": src_x0.data["time"], "ideal": src_x0_mg.data["ideal"], "equiv": src_x0_mg.data["equiv"]})
+    src_line = ColumnDataSource(data={"time": src_x0.data["time"], "ideal": src_x0_mg.data["ideal"], "equiv": src_x0_mg.data["equiv(sum)"]})
     line_figure = figure(title="marginal coefficient", x_axis_label='time', y_axis_label="coefficient",
                          width_policy="fixed", height_policy="fixed", width=int(1200*ratio), height=int(700*ratio))
     line_figure.line("time", "ideal", source=src_line, line_color="red", line_width=4, legend_label="ideal")
@@ -238,7 +238,8 @@ def datatable_tx():
         table_margin.min_width = 4*col_width
         table_margin.height = 26*(src_margin.length+1);
         
-        src_line.data = {"time": src_mat.data["time"], "ideal": src_margin.data["ideal"], "equiv": src_margin.data["equiv"]};
+        equiv_name = x0_or_eps == "noise" ? "equiv(norm)" : "equiv(sum)"
+        src_line.data = {"time": src_mat.data["time"], "ideal": src_margin.data["ideal"], "equiv": src_margin.data[equiv_name]};
          
         if (rn_flag == "original") return;
         
@@ -289,7 +290,7 @@ def datatable_tx():
     """)
     
     styles = {"margin-left": "auto", "margin-right": "auto"}
-    show([column(title, Spacer(height=50), row(schema_figure, column(line_figure, note)), Spacer(height=30),
+    save([column(title, Spacer(height=50), row(schema_figure, column(line_figure, note)), Spacer(height=30),
                 row(alg_sel, x0_or_eps, step_sel, row_normalized, col_width_spin, width=500, styles=styles), row(table_mat, table_margin, styles=styles),),
                  Spacer(height=50), author_note]
          )
