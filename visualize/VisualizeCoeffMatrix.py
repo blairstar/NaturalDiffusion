@@ -82,7 +82,7 @@ def create_coeff_pool(coeff_list_path, coeff_pool):
     df = df[df["alg"] != "ode heun"]
     
     for row in df.itertuples():
-        # if row.alg not in ["ddpm", "deis tab3"]:
+        # if row.alg not in ["ddpm"]:
         #     continue
         create_one_coeff(row.alg, row.step, row.path, coeff_pool)
     return
@@ -184,9 +184,9 @@ def datatable_tx():
     src_mat = ColumnDataSource(data=copy.deepcopy(src_x0.data))
     src_margin = ColumnDataSource(data=copy.deepcopy(src_x0_mg.data))
     table_mat = DataTable(source=src_mat, columns=tc_x0, index_position=None, autosize_mode="none",
-                          height=290, height_policy="auto", width_policy="min", min_width=440, resizable="both")
+                          height=290, height_policy="fixed", width_policy="min", min_width=440, resizable="both")
     table_margin = DataTable(source=src_margin, columns=tc_x0_mg, index_position=None, autosize_mode="none",
-                             height=290, height_policy="auto", width_policy="min", min_width=160)
+                             height=290, height_policy="fixed", width_policy="min", min_width=160)
     
     callback = CustomJS(args=dict(alg_sel=alg_sel, step_sel=step_sel, x0_or_eps=x0_or_eps,
                                   row_normalized=row_normalized, col_width_spin=col_width_spin,
@@ -273,10 +273,25 @@ def datatable_tx():
     row_normalized.js_on_change("value", callback)
     col_width_spin.js_on_change("value", callback)
     
+    author_note = Div(text="""
+        <div style="
+             position: fixed;
+        bottom: 10px;
+        width: 100%;
+        text-align: center;
+        font-size: 12px;
+        color: gray;
+        background-color: #f9f9f9;
+        padding: 5px 0;
+        border-top: 1px solid #ddd;">
+            Created By Zhenxin Zheng(郑镇鑫). For more information, pleaser refer to<a href="https://github.com/blairstar/NaturalDiffusion" style="margin: 0 10px; color: #007acc; text-decoration: none;">Natural Diffusion </a>
+        </div>
+    """)
+    
     styles = {"margin-left": "auto", "margin-right": "auto"}
-    save(column(title, Spacer(height=50), row(schema_figure, column(line_figure, note)), Spacer(height=30),
-                row(alg_sel, x0_or_eps, step_sel, row_normalized, col_width_spin, width=500, styles=styles), row(table_mat, table_margin, styles=styles)
-                )
+    show([column(title, Spacer(height=50), row(schema_figure, column(line_figure, note)), Spacer(height=30),
+                row(alg_sel, x0_or_eps, step_sel, row_normalized, col_width_spin, width=500, styles=styles), row(table_mat, table_margin, styles=styles),),
+                 Spacer(height=50), author_note]
          )
     return
 

@@ -25,17 +25,17 @@
 - &#x2705; Flow Matching Euler
 
 ### Reproducing 
-- For reproducing the results in Section 3.2 - *Weighted Sum Degradation Phenome*. please refer to AnalyzeWeightedSumDegradation.py.
+- For reproducing the results in Section 3.2 - *Weighted Sum Degradation Phenome*, please refer to AnalyzeWeightedSumDegradation.py.
 - For reproducing the results in Section 4.3 - *Represent DDPM Ancestral Sampling with Natural Inference Framework*, please refer to AnalyzeDDPMDDIM.py.
-- For reproducing the results in Section 4.4 - *Represent DDIM with Natural Inference Framework*. please refer to AnalyzeDDPMDDIM.py.
-- For reproducing the results in Section 4.5 - *Represent Flow Matching Euler Sampling with Natural Inference Framework*. please refer to AnalyzeFlowMatching.py.
-- For reproducing the results in Section 4.6 - *Represent High Order Samplers with Natural Inference Framework*. please refer to AnalyzeDEIS.py and AnalyzeDPMSolver.py.
-- For reproducing the results in Section 5.3 - *A Way to Control Image Sharpness*. please refer to SD3NaturalInference.py.
-- For reproducing the results in Section 5.4 - *Better Coefficient Matrix*. please refer to CIFAR10NaturalInference.py.
+- For reproducing the results in Section 4.4 - *Represent DDIM with Natural Inference Framework*, please refer to AnalyzeDDPMDDIM.py.
+- For reproducing the results in Section 4.5 - *Represent Flow Matching Euler Sampling with Natural Inference Framework*, please refer to AnalyzeFlowMatching.py.
+- For reproducing the results in Section 4.6 - *Represent High Order Samplers with Natural Inference Framework*, please refer to AnalyzeDEIS.py and AnalyzeDPMSolver.py.
+- For reproducing the results in Section 5.3 - *A Way to Control Image Sharpness*, please refer to SD3NaturalInference.py.
+- For reproducing the results in Section 5.4 - *Better Coefficient Matrix*, please refer to CIFAR10NaturalInference.py.
 
 
 ### Visualize Coefficient Matrix
 
-VisualizeCoeffMatrix.html is an standalone web application that can run offline in a browser.
+- For visualizing coefficient matrixs on Natural Inference, please refer to Visualize/VisualizeCoeffMatrix.html. VisualizeCoeffMatrix.html is an standalone web application that can run offline in a browser.
 [![Visualze coefficient matrix](visualize/VisualizeCoeffMatrix.jpg)](https://youtu.be/2zRA1T7wC6E)
 
