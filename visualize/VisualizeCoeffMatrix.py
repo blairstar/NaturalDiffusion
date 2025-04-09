@@ -80,6 +80,7 @@ def create_table_columns(columns):
 def create_coeff_pool(coeff_list_path, coeff_pool):
     df = pd.read_csv(coeff_list_path, index_col=0)
     df = df[df["alg"] != "ode heun"]
+    df["alg"] = df["alg"].str.replace("dpmsolverpp", "dpmsolver++")
     
     for row in df.itertuples():
         # if row.alg not in ["ddpm"]:
@@ -117,31 +118,10 @@ def create_step_options():
     return options_1, options_2, options_3
 
 
-def datatable_tx():
+def visualize_coeff_matrix_tx():
     arr_step_opts = create_step_options()
     
-    # dfs = get_df("D:\\codes\\WeSee\\NaturalDiffusion\\results\\ddpm\\ddpm_simpy_010.npz")
-    # dfx0, dfx0mg, dfeps, dfepsmg = dfs
-    # src_x0, src_x0_mg = ColumnDataSource(dfx0), ColumnDataSource(dfx0mg)
-    # src_eps, src_eps_mg = ColumnDataSource(dfeps), ColumnDataSource(dfepsmg)
-    # src_x0.data.pop("index")
-    # src_x0_mg.data.pop("index")
-    # src_eps.data.pop("index")
-    # src_eps_mg.data.pop("index")
-    # 
-    # tc_x0 = create_table_columns(dfx0.columns)
-    # tc_x0_mg = create_table_columns(dfx0mg.columns)
-    # 
-    # tc_eps = create_table_columns(dfeps.columns)
-    # tc_eps_mg = create_table_columns(dfepsmg.columns)
-    # 
-    # coeff_pool = {}
-    # coeff_pool["ddpm_10_pred_x0"] = (src_x0, tc_x0, src_x0_mg, tc_x0_mg)
-    # coeff_pool["ddpm_10_noise"] = (src_eps, tc_eps, src_eps_mg, tc_eps_mg)
-    # for ii in range(200):
-    #     coeff_pool["a_%d"%ii] = (src_eps, tc_eps, src_eps_mg, tc_eps_mg)
-    
-    output_file(filename="VisualizeCoeffMatrix.html", title="Visualize Coefficient Matrix")
+    output_file(filename="visualize/VisualizeCoeffMatrix.html", title="Visualize Coefficient Matrix")
     
     coeff_pool = {}
     create_coeff_pool("./all_coeff_matrix.csv", coeff_pool)
@@ -150,7 +130,7 @@ def datatable_tx():
     alg_opts = ["ddpm", "ddim", "sde euler", "ode euler", "flow match euler",
                 "deis tab3", "dpmsolver2s", "dpmsolver3s", "dpmsolver++2s", "dpmsolver++3s"]
 
-    title = Div(text="<h1>Visualize the Coefficient Matrix of Various Samplers on Natural Inference Framework</h1>", styles={"text-align": "center", "margin-left": "auto", "margin-right": "auto"})
+    title = Div(text="<h1>Visualize the Coefficient Matrix of Various Samplers on Natural Inference Framework</h1>", styles={"text-align": "center", "margin-top": "30px", "margin-bottom": "30px", "margin-left": "auto", "margin-right": "auto"})
     
     note = Div(text="""<span style='font-weight: bold;'>Note: The equivalent marginal coefficient</span> <span style="font-weight: bold; color: red"> always approximates </span> <span style='font-weight: bold;'> the ideal marginal coefficient</span><br>
                        <span style='font-weight: bold;'>and the error decreases as the number of sampling steps increases</span>""")
@@ -168,7 +148,7 @@ def datatable_tx():
     schema_figure.toolbar_location = None
     
     src_line = ColumnDataSource(data={"time": src_x0.data["time"], "ideal": src_x0_mg.data["ideal"], "equiv": src_x0_mg.data["equiv(sum)"]})
-    line_figure = figure(title="marginal coefficient", x_axis_label='time', y_axis_label="coefficient",
+    line_figure = figure(title="marginal signal coefficient", x_axis_label='time', y_axis_label="coefficient",
                          width_policy="fixed", height_policy="fixed", width=int(1200*ratio), height=int(700*ratio))
     line_figure.line("time", "ideal", source=src_line, line_color="red", line_width=4, legend_label="ideal")
     line_figure.line("time", "equiv", source=src_line, line_dash="dashed", line_color="orange", line_width=4, legend_label="equiv")
@@ -190,8 +170,8 @@ def datatable_tx():
     
     callback = CustomJS(args=dict(alg_sel=alg_sel, step_sel=step_sel, x0_or_eps=x0_or_eps,
                                   row_normalized=row_normalized, col_width_spin=col_width_spin,
-                                  arr_step_opts=arr_step_opts, coeff_pool=coeff_pool,
-                                  table_mat=table_mat, table_margin=table_margin, src_line=src_line),
+                                  arr_step_opts=arr_step_opts, coeff_pool=coeff_pool, table_mat=table_mat,
+                                  table_margin=table_margin, src_line=src_line, line_figure=line_figure),
                         code="""
         var width = window.innerWidth;
         var step = step_sel.value;
@@ -235,12 +215,13 @@ def datatable_tx():
         
         table_margin.source.data = src_margin.data;
         table_margin.columns = tc_margin;
-        table_margin.min_width = 4*col_width
+        table_margin.min_width = 4*col_width;
         table_margin.height = 26*(src_margin.length+1);
         
-        equiv_name = x0_or_eps == "noise" ? "equiv(norm)" : "equiv(sum)"
+        line_figure.title.text = x0_or_eps == "noise" ? "marginal noise coefficient" : "marginal signal coefficient";
+        var equiv_name = x0_or_eps == "noise" ? "equiv(norm)" : "equiv(sum)";
         src_line.data = {"time": src_mat.data["time"], "ideal": src_margin.data["ideal"], "equiv": src_margin.data[equiv_name]};
-         
+        
         if (rn_flag == "original") return;
         
         const old_data = src_mat.data;
@@ -276,7 +257,7 @@ def datatable_tx():
     
     author_note = Div(text="""
         <div style="
-             position: fixed;
+        position: fixed;
         bottom: 10px;
         width: 100%;
         text-align: center;
@@ -292,7 +273,7 @@ def datatable_tx():
     styles = {"margin-left": "auto", "margin-right": "auto"}
     save([column(title, Spacer(height=50), row(schema_figure, column(line_figure, note)), Spacer(height=30),
                 row(alg_sel, x0_or_eps, step_sel, row_normalized, col_width_spin, width=500, styles=styles), row(table_mat, table_margin, styles=styles),),
-                 Spacer(height=50), author_note]
+                Spacer(height=50), author_note]
          )
     return
 
@@ -311,12 +292,12 @@ def generate_coeff_matrix_tx():
     for step in opts1:
         print("order 1", step)
         step = int(step)
-        # ddpm_simpy_analyze_coeff(step)
-        # ddim_simpy_analyze_coeff(step)
-        # flow_simpy_analyze_coeff(step)
-        # analyze_tab(step)
-        # analyze_sde(step)
-        # analyze_ode(step)
+        ddpm_simpy_analyze_coeff(step)
+        ddim_simpy_analyze_coeff(step)
+        flow_simpy_analyze_coeff(step)
+        analyze_tab(step)
+        analyze_sde(step)
+        analyze_ode(step)
         infos.append(["ddpm", "ddpm\\ddpm_simpy", step])
         infos.append(["ddim", "ddim\\ddim_simpy", step])
         infos.append(["flow match euler", "flow_euler\\flow_euler_simpy", step])
@@ -327,9 +308,9 @@ def generate_coeff_matrix_tx():
     for step in opts2:
         print("order 2", step)
         step = int(step)//2
-        # analyze_heun(step)
-        # analyze_dpmsolver_2s(step)
-        # analyze_dpmsolver_pp_2s(step)
+        analyze_heun(step)
+        analyze_dpmsolver_2s(step)
+        analyze_dpmsolver_pp_2s(step)
         infos.append(["ode heun", "euler_heun\\ode_heun", step*2])
         infos.append(["dpmsolver2s", "dpmsolver\\dpmsolver2s", step*2])
         infos.append(["dpmsolverpp2s", "dpmsolverpp\\dpmsolverpp2s", step*2])
@@ -337,8 +318,8 @@ def generate_coeff_matrix_tx():
     for step in opts3:
         print("order 3", step)
         step = int(step)//3
-        # analyze_dpmsolver_3s(step)
-        # analyze_dpmsolver_pp_3s(step)
+        analyze_dpmsolver_3s(step)
+        analyze_dpmsolver_pp_3s(step)
         infos.append(["dpmsolver3s", "dpmsolver\\dpmsolver3s", step*3])
         infos.append(["dpmsolverpp3s", "dpmsolverpp\\dpmsolverpp3s", step*3])
 
@@ -357,5 +338,5 @@ def generate_coeff_matrix_tx():
 
 
 if __name__ == "__main__":
-    datatable_tx()
     # generate_coeff_matrix_tx()
+    visualize_coeff_matrix_tx()

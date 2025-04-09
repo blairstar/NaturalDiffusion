@@ -37,5 +37,5 @@
 ### Visualize Coefficient Matrix
 
 - For visualizing coefficient matrixs on Natural Inference, please refer to Visualize/VisualizeCoeffMatrix.html. VisualizeCoeffMatrix.html is an standalone web application that can run offline in a browser.
-[![Visualze coefficient matrix](visualize/VisualizeCoeffMatrix.jpg)](https://youtu.be/2zRA1T7wC6E)
+[![Visualze coefficient matrix](visualize/VisualizeCoeffMatrix.jpg)](https://www.youtube.com/watch?v=2zRA1T7wC6E)
 
