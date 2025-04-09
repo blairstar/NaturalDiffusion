@@ -1,4 +1,6 @@
 
+# # We use the pre-trained model released by ScoreSDE. Please download vp/cifar10_ddpm_continuous/checkpoint_8.pth.
+
 import os, sys
 sys.path.append("deps")
 sys.path.append("deps/score_sde_pytorch")
@@ -267,7 +269,7 @@ def natural_inference_tx():
 
     score_fn = mutils.get_score_fn(sde, score_model, train=False, continuous=True)
     
-    # # Be careful! Make sure that the past_x0_coeff have been normalized to the marginal coefficients
+    # # Be careful! Make sure that the past_x0_coeff have been normalized to the marginal signal coefficients
     past_x0_coeff, past_eps_coeff, node_coeff = np.load(weight_path).values()
    
     print(past_x0_coeff/np.diag(past_x0_coeff)[:, None])
@@ -297,7 +299,8 @@ def natural_inference_tx():
             seq_x0.append(pred_x0)
             
             next_x0 = weighted_sum(past_x0_coeff[kk], seq_x0)
-            next_eps = node_coeff[kk+1, 2]*noise
+            # next_eps = node_coeff[kk+1, 2]*noise
+            next_eps = past_eps_coeff[kk, 0]*noise
             next_model_input = next_x0 + next_eps
         out = next_model_input
         
