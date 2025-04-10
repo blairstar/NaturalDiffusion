@@ -130,16 +130,16 @@ def visualize_coeff_matrix_tx():
     alg_opts = ["ddpm", "ddim", "sde euler", "ode euler", "flow match euler",
                 "deis tab3", "dpmsolver2s", "dpmsolver3s", "dpmsolver++2s", "dpmsolver++3s"]
 
-    title = Div(text="<h1>Visualize the Coefficient Matrix of Various Samplers on Natural Inference Framework</h1>", styles={"text-align": "center", "margin-top": "30px", "margin-bottom": "30px", "margin-left": "auto", "margin-right": "auto"})
+    title = Div(text="<h1>Visualize the Coefficient Matrix of Various Samplers on Natural Inference Framework</h1>", styles={"text-align": "center", "margin-top": "10px", "margin-bottom": "10px", "margin-left": "auto", "margin-right": "auto"})
     
     note = Div(text="""<span style='font-weight: bold;'>Note: The equivalent marginal coefficient</span> <span style="font-weight: bold; color: red"> always approximates </span> <span style='font-weight: bold;'> the ideal marginal coefficient</span><br>
                        <span style='font-weight: bold;'>and the error decreases as the number of sampling steps increases</span>""")
 
-    ratio = 0.5
-    schema_figure = figure(width_policy="fixed", height_policy="fixed", width=int(1760*ratio), height=int(750*ratio))
-    with open("./inference_framework.png", "rb") as img_file:
+    ratio = 0.60
+    schema_figure = figure(width_policy="fixed", height_policy="fixed", width=int(1800*ratio), height=int(1100*ratio))
+    with open("./inference_framework_coeff_matrix_short.jpg", "rb") as img_file:
         encoded_string = base64.b64encode(img_file.read()).decode()
-    base64_image_url = f"data:image/png;base64,{encoded_string}"
+    base64_image_url = f"data:image/jpg;base64,{encoded_string}"
     src_img = ColumnDataSource(data={'url': [base64_image_url]})
     schema_figure.image_url(url="url", x=0, y=0, w=2.5, h=1, source=src_img)
     schema_figure.outline_line_color = None
@@ -149,11 +149,13 @@ def visualize_coeff_matrix_tx():
     
     src_line = ColumnDataSource(data={"time": src_x0.data["time"], "ideal": src_x0_mg.data["ideal"], "equiv": src_x0_mg.data["equiv(sum)"]})
     line_figure = figure(title="marginal signal coefficient", x_axis_label='time', y_axis_label="coefficient",
-                         width_policy="fixed", height_policy="fixed", width=int(1200*ratio), height=int(700*ratio))
+                         width_policy="fixed", height_policy="fixed", width=int(1200*ratio), height=int(800*ratio))
     line_figure.line("time", "ideal", source=src_line, line_color="red", line_width=4, legend_label="ideal")
     line_figure.line("time", "equiv", source=src_line, line_dash="dashed", line_color="orange", line_width=4, legend_label="equiv")
     line_figure.legend.click_policy = "hide"
     line_figure.title.align = "center"
+    line_figure.xaxis.axis_label_text_font_style = "bold"
+    line_figure.yaxis.axis_label_text_font_style = "bold"
 
     alg_sel = Select(title="select algorithm", value="ddpm", options=alg_opts)
     step_sel = Select(title="select step", value="10", options=arr_step_opts[0])
@@ -271,7 +273,7 @@ def visualize_coeff_matrix_tx():
     """)
     
     styles = {"margin-left": "auto", "margin-right": "auto"}
-    save([column(title, Spacer(height=50), row(schema_figure, column(line_figure, note)), Spacer(height=30),
+    save([column(title, Spacer(height=20), row(schema_figure, column(line_figure, note)), Spacer(height=0),
                 row(alg_sel, x0_or_eps, step_sel, row_normalized, col_width_spin, width=500, styles=styles), row(table_mat, table_margin, styles=styles),),
                 Spacer(height=50), author_note]
          )

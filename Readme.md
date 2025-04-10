@@ -7,7 +7,7 @@
 
 
 
-![NaturalDiffusion](inference_framework.png)
+![NaturalDiffusion](degradation_inference_framework_coeff_matrix.png)
 
 
 ### A Unified Diffusion Model Inference Framework - Natural Inference
