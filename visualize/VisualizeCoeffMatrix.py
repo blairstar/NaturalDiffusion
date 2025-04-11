@@ -132,8 +132,10 @@ def visualize_coeff_matrix_tx():
 
     title = Div(text="<h1>Visualize the Coefficient Matrix of Various Samplers on Natural Inference Framework</h1>", styles={"text-align": "center", "margin-top": "10px", "margin-bottom": "10px", "margin-left": "auto", "margin-right": "auto"})
     
-    note = Div(text="""<span style='font-weight: bold;'>Note: The equivalent marginal coefficient</span> <span style="font-weight: bold; color: red"> always approximates </span> <span style='font-weight: bold;'> the ideal marginal coefficient</span><br>
-                       <span style='font-weight: bold;'>and the error decreases as the number of sampling steps increases</span>""")
+    note = Div(text="""<span style='font-weight: bold;'>Note: For VP diffusion, the equivalent marginal coefficient</span> <span style="font-weight: bold; color: red"> always approximates </span> <span style='font-weight: bold;'> the ideal marginal coefficient,</span><br>
+                       <span style='font-weight: bold;'> &nbsp;&nbsp; &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; and the error decreases as the number of sampling steps increases.</span> <br>
+                       <span style='font-weight: bold;'> &nbsp;&nbsp; &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; For flow matching, the equivalent marginal coefficient</span> <span style="font-weight: bold; color: red"> identically equal to </span> <span style='font-weight: bold;'> the ideal marginal coefficient.</span></span>
+                    """)
 
     ratio = 0.60
     schema_figure = figure(width_policy="fixed", height_policy="fixed", width=int(1800*ratio), height=int(1100*ratio))
