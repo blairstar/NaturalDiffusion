@@ -3,13 +3,13 @@
 		Rethinking Diffusion Model in High Dimension </span>
     </h1>
 </div>
+### [Paper](https://arxiv.org/abs/2503.08643) 
 </br>
-
 
 
 ![NaturalDiffusion](degradation_inference_framework_coeff_matrix.png)
 
-### [Paper](https://arxiv.org/abs/2503.08643) 
+
 
 ### A Unified Diffusion Model Inference Framework - Natural Inference
 
@@ -35,9 +35,9 @@
 - For reproducing the results in Section 5.4 - *Better Coefficient Matrix*, please refer to CIFAR10NaturalInference.py.
 
 
-### Vilidate Consistency
+### Validate Consistency
 
-- To Verifying the consistency between the results of the original algorithm and Natural Inference, please refer to ValidateNaturalInference.py.
+- To Validating the consistency between the results of the original algorithm and Natural Inference, please refer to ValidateNaturalInference.py.
 
 ### Visualize Coefficient Matrix
 
