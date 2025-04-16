@@ -3,8 +3,10 @@
 		Rethinking Diffusion Model in High Dimension </span>
     </h1>
 </div>
-### [Paper](https://arxiv.org/abs/2503.08643) 
 </br>
+
+### [Paper](https://arxiv.org/abs/2503.08643) 
+
 
 
 ![NaturalDiffusion](degradation_inference_framework_coeff_matrix.png)
