@@ -9,6 +9,7 @@
 
 ![NaturalDiffusion](degradation_inference_framework_coeff_matrix.png)
 
+### [Paper](https://arxiv.org/abs/2503.08643) 
 
 ### A Unified Diffusion Model Inference Framework - Natural Inference
 
@@ -34,8 +35,13 @@
 - For reproducing the results in Section 5.4 - *Better Coefficient Matrix*, please refer to CIFAR10NaturalInference.py.
 
 
+### Vilidate Consistency
+
+- To Verifying the consistency between the results of the original algorithm and Natural Inference, please refer to ValidateNaturalInference.py.
+
 ### Visualize Coefficient Matrix
 
-- For visualizing coefficient matrixs on Natural Inference, please refer to Visualize/VisualizeCoeffMatrix.html. VisualizeCoeffMatrix.html is an standalone web application that can run offline in a browser.
+- To visualizing coefficient matrixs on Natural Inference, please refer to Visualize/VisualizeCoeffMatrix.html. VisualizeCoeffMatrix.html is an standalone web application that can run offline in a browser.
+
 [![Visualze coefficient matrix](visualize/VisualizeCoeffMatrix.jpg)](https://www.youtube.com/watch?v=2zRA1T7wC6E)
 
