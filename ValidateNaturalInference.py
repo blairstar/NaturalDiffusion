@@ -1,4 +1,6 @@
-import os
+
+import os, sys
+sys.path.append("deps")
 from diffusers.models import AutoencoderKL
 from models import DiT_models
 import torch

@@ -1,5 +1,4 @@
 
-# # We use the pre-trained model released by ScoreSDE. Please download vp/cifar10_ddpm_continuous/checkpoint_8.pth.
 
 import os, sys
 sys.path.append("deps")
@@ -299,9 +298,10 @@ def natural_inference_tx():
             seq_x0.append(pred_x0)
             
             next_x0 = weighted_sum(past_x0_coeff[kk], seq_x0)
-            # next_eps = node_coeff[kk+1, 2]*noise
+            # Only the elements in the first column are non-zero, which means that noise is added only in the first step
             next_eps = past_eps_coeff[kk, 0]*noise
             next_model_input = next_x0 + next_eps
+            
         out = next_model_input
         
         out = inverse_scaler(out)
@@ -411,7 +411,9 @@ def dpm_solver_tx():
 
 
 if __name__ == "__main__":
+    """
+    We use the pre-trained model released by ScoreSDE. Please download vp/cifar10_ddpm_continuous/checkpoint_8.pth.
+    """
     # deis_sampling_tx()
     natural_inference_tx()
-    # calc_fid_tx()
     # dpm_solver_tx()
