@@ -1,11 +1,5 @@
-<div style="text-align: center;">
-	<h1 style="display:block">
-		Rethinking Diffusion Model in High Dimension </span>
-    </h1>
-</div>
-</br>
 
-### [Paper](https://arxiv.org/abs/2503.08643) 
+# Rethinking Diffusion Model in High Dimension [(Paper)](https://arxiv.org/abs/2503.08643) 
 
 
 
