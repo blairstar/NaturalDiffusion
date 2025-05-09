@@ -2,8 +2,8 @@
 import os, sys
 from pathlib import Path
 root_path = Path(__file__).resolve().parent.parent
-sys.path.append(str(root_path/"deps"))
-sys.path.append(str(root_path/"deps"/"score_sde_pytorch"))
+sys.path.insert(0, str(root_path/"deps"))
+sys.path.insert(0, str(root_path/"deps/score_sde_pytorch"))
 
 from models import ncsnpp
 from models import ddpm as ddpm_model

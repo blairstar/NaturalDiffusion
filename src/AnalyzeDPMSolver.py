@@ -1,7 +1,9 @@
 # # Part of the code is copied from https://github.com/LuChengTHU/dpm-solver
 
+import sys
 from pathlib import Path
 root_path = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(root_path/"src"))
 
 import numpy as np
 from sympy import symbols

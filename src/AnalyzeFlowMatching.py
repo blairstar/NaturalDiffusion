@@ -1,10 +1,11 @@
 
+import sys
 from pathlib import Path
 root_path = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(root_path/"src"))
 
 import numpy as np
 import pandas as pd
-import os
 
 from sympy import symbols
 

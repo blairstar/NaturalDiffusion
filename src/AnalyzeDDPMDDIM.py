@@ -1,17 +1,16 @@
 
+import sys
 from pathlib import Path
 root_path = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(root_path/"src"))
 
 import numpy as np
 import pandas as pd
 import os
-import matplotlib.pyplot as plt
-import scienceplots
-import sympy
 from sympy import symbols
 
 
-from Utils import CAnalyzer, draw_marginal_coeff, save_coeff_matrix
+from Utils import CAnalyzer, save_coeff_matrix
 
 
 np.set_printoptions(suppress=True, linewidth=200, precision=4)

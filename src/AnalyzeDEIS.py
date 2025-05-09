@@ -4,7 +4,8 @@
 import os, sys
 from pathlib import Path
 root_path = Path(__file__).resolve().parent.parent
-sys.path.append(str(root_path/"deps"))
+sys.path.insert(0, str(root_path/"deps"))
+sys.path.insert(0, str(root_path/"src"))
 
 import numpy as np
 np.set_printoptions(suppress=True, linewidth=200, precision=3)

@@ -1,7 +1,8 @@
 
-import os
+import os, sys
 from pathlib import Path
 root_path = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(root_path/"deps/DiT"))
 
 from diffusers.models import AutoencoderKL
 from models import DiT_models
@@ -250,7 +251,7 @@ def ddpm_skip_sample(num_step=24):
         input_z = output_z
 
     samples = vae.decode(input_z / 0.18215).sample
-    path = make_path(root_path/"results/validation/ddpm_%03d__seed_%d__original.png"%(num_step, seed))
+    path = make_path(root_path/("results/validation/ddpm_%03d__seed_%d__original.png"%(num_step, seed)))
     save_image(samples, path, nrow=8, normalize=True, value_range=(-1, 1))
 
     return
@@ -290,6 +291,9 @@ def ddim_skip_sample(num_step=24):
     input_z = copy.deepcopy(z)
 
     for ii in list(range(0, num_step))[::-1]:
+        if ii % 10 == 0:
+            print(ii)
+        
         timesteps = torch.ones(n, dtype=torch.int32, device=device) * skip_idxs[ii]
 
         ret = forward_cfg(model, input_z, timesteps, class_labels, 4.0, 1000)
@@ -303,7 +307,7 @@ def ddim_skip_sample(num_step=24):
         input_z = output_z
     
     samples = vae.decode(input_z / 0.18215).sample
-    path = make_path(root_path/"results/validation/ddim_%03d__seed_%d__original.png"%(num_step, seed))
+    path = make_path(root_path/("results/validation/ddim_%03d__seed_%d__original.png"%(num_step, seed)))
     save_image(samples, path, nrow=8, normalize=True, value_range=(-1, 1))
 
     return
@@ -315,7 +319,7 @@ def natural_inference(alg_name="ddpm", num_step=24):
     
     device = "cuda:0"
     
-    weight_path = root_path/"results/%s/%s_%03d.npz"%(alg_name, alg_name, num_step)
+    weight_path = root_path/("results/%s/%s_%03d.npz"%(alg_name, alg_name, num_step))
     # # Be careful! Make sure that the past_x0_coeff have been normalized to the marginal signal coefficients
     past_x0_coeff, past_eps_coeff, node_coeff = np.load(weight_path).values()
     num_step = past_eps_coeff.shape[0]
@@ -371,7 +375,7 @@ def natural_inference(alg_name="ddpm", num_step=24):
         input_z = output_z
 
     samples = vae.decode(input_z / 0.18215).sample
-    path = make_path(root_path/"results/validation/%s__seed_%d__natural.png" % (weight_name, seed))
+    path = make_path(root_path/("results/validation/%s__seed_%d__natural.png" % (weight_name, seed)))
     save_image(samples, path, nrow=8, normalize=True, value_range=(-1, 1))
   
     return

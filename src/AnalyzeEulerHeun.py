@@ -1,13 +1,13 @@
 # # Part of the code is copied from https://github.com/yang-song/score_sde.git
 
+import sys
 from pathlib import Path
 root_path = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(root_path/"src"))
 
 import numpy as np
 import torch
-import sympy
 from sympy import symbols
-import pandas as pd
 
 from Utils import CAnalyzer, save_coeff_matrix
 
