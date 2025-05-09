@@ -12,3 +12,4 @@ scienceplots
 matplotlib
 tqdm
 diffusers
+timm
