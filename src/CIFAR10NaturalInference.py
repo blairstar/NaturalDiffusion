@@ -1,8 +1,9 @@
 
-
 import os, sys
-sys.path.append("deps")
-sys.path.append("deps/score_sde_pytorch")
+from pathlib import Path
+root_path = Path(__file__).resolve().parent.parent
+sys.path.append(str(root_path/"deps"))
+sys.path.append(str(root_path/"deps"/"score_sde_pytorch"))
 
 from models import ncsnpp
 from models import ddpm as ddpm_model
@@ -94,7 +95,7 @@ def calc_fid_tx():
         imgs.append(torch.from_numpy(np.array(img)))
     imgs = torch.stack(imgs)
     
-    fid_value = calc_fid(imgs, "./cifar10_mu_sigma.npz", "cuda")
+    fid_value = calc_fid(imgs, root_path/"weights"/"cifar10_mu_sigma.npz", "cuda")
     print(fid_value)
     return
 
@@ -122,7 +123,7 @@ def show_samples(x, path, config):
 def deis_sampling_tx():
     # # to do: set checkpoint path and batch_size
     batch_size = 500
-    ckpt_filename = os.path.expanduser("deps/score_sde_pytorch/checkpoint_8.pth")
+    ckpt_filename = str(root_path/"deps/score_sde_pytorch/checkpoint_8.pth")
     assert os.path.exists(ckpt_filename)
     
     config = configs.get_config()
@@ -185,7 +186,7 @@ def deis_sampling_tx():
             all_batch.append(to_pixel(out))
             
         all_batch = torch.concatenate(all_batch)
-        fid_value = calc_fid(all_batch, "./cifar10_mu_sigma.npz", config.device)
+        fid_value = calc_fid(all_batch, root_path/"weights/cifar10_mu_sigma.npz", config.device)
         
         infos.append([num_step, ts_phase, method, ab_order, fid_value])
         
@@ -241,8 +242,8 @@ def weighted_sum(past_x0_coeff, seq_x0):
 def natural_inference_tx():
     # # to do: set checkpoint path, batch_size and weight_path
     batch_size = 500
-    ckpt_filename = os.path.expanduser("deps/score_sde_pytorch/checkpoint_8.pth")
-    weight_path = "weights/step_5_weight_00.npz"
+    ckpt_filename = str(root_path/"deps/score_sde_pytorch/checkpoint_8.pth")
+    weight_path = str(root_path/"weights/step_5_weight_00.npz")
     assert os.path.exists(ckpt_filename)
     
     config = configs.get_config()
@@ -308,7 +309,7 @@ def natural_inference_tx():
         all_batch.append(to_pixel(out))
         
     all_batch = torch.concatenate(all_batch)
-    fid_value = calc_fid(all_batch, "./cifar10_mu_sigma.npz", config.device)
+    fid_value = calc_fid(all_batch, root_path/"weights/cifar10_mu_sigma.npz", config.device)
     print(fid_value)
     print(weight_path)
     print(past_x0_coeff/np.diag(past_x0_coeff)[:, None])
@@ -331,7 +332,7 @@ def get_noise_fn(model_fn):
 def dpm_solver_tx():
     # # to do: set checkpoint path and batch_size
     batch_size = 500
-    ckpt_filename = os.path.expanduser("deps/score_sde_pytorch/checkpoint_8.pth")
+    ckpt_filename = str(root_path/"deps/score_sde_pytorch/checkpoint_8.pth")
     assert os.path.exists(ckpt_filename)
     
     config = configs.get_config()
@@ -357,7 +358,7 @@ def dpm_solver_tx():
     model_fn = mutils.get_model_fn(score_model, train=False)
     noise_fn = get_noise_fn(model_fn)
     
-    print("beta", sde.beta_0, sde.beta_1) 
+    print("beta", sde.beta_0, sde.beta_1)
     
     algorithm_types = ["dpmsolver", "dpmsolver++"]
     methods = ["singlestep", "multistep"]
@@ -395,7 +396,7 @@ def dpm_solver_tx():
             all_batch.append(to_pixel(out))
 
         all_batch = torch.concatenate(all_batch)
-        fid_value = calc_fid(all_batch, "./cifar10_mu_sigma.npz", config.device)
+        fid_value = calc_fid(all_batch, root_path/"weights/cifar10_mu_sigma.npz", config.device)
         infos.append([num_step, algorithm_type, method, skip_type, correcting_x0_fn, order, fid_value])
         print(num_step, algorithm_type, method, skip_type, correcting_x0_fn, order, fid_value)
         print("")

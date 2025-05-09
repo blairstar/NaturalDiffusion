@@ -1,13 +1,14 @@
 
-import os, sys
-sys.path.append("deps")
+import os
+from pathlib import Path
+root_path = Path(__file__).resolve().parent.parent
+
 from diffusers.models import AutoencoderKL
 from models import DiT_models
 import torch
 import numpy as np
 import copy
 from torchvision.utils import save_image
-
 
 
 torch.set_printoptions(sci_mode=False, precision=6, linewidth=200)
@@ -211,15 +212,18 @@ def ddpm_skip_sample(num_step=24):
     alphas, alphas_bar, log_var, coeff_xt2x0, coeff_eps2x0, coeff_xt, coeff_x0 = coeff_all
 
     coeff = coeff_xt2x0, coeff_eps2x0, coeff_xt, coeff_x0
+    
+    # # to do: specify vae path and model_path
+    vae_path = "./sd-vae-ft-ema"
+    model_path = "./DiT-XL-2-256x256.pt"
 
-    vae = AutoencoderKL.from_pretrained(f"./sd-vae-ft-ema").to(device)
+    vae = AutoencoderKL.from_pretrained(vae_path).to(device)
     vae.eval()
 
     latent_size = 32
 
-    path = "DiT-XL-2-256x256.pt"
     model = DiT_models["DiT-XL/2"](input_size=latent_size, num_classes=1000, learn_sigma=True).to(device)
-    model.load_state_dict(torch.load(path))
+    model.load_state_dict(torch.load(model_path))
     model.eval()
 
     class_labels = torch.tensor([207, 360, 387, 974, 88, 979, 417, 279], device=device)
@@ -246,7 +250,7 @@ def ddpm_skip_sample(num_step=24):
         input_z = output_z
 
     samples = vae.decode(input_z / 0.18215).sample
-    path = make_path("results/validation/ddpm_%03d__seed_%d__original.png"%(num_step, seed))
+    path = make_path(root_path/"results/validation/ddpm_%03d__seed_%d__original.png"%(num_step, seed))
     save_image(samples, path, nrow=8, normalize=True, value_range=(-1, 1))
 
     return
@@ -266,14 +270,17 @@ def ddim_skip_sample(num_step=24):
 
     coeff = coeff_xt2x0, coeff_eps2x0, coeff_xt, coeff_x0
 
-    vae = AutoencoderKL.from_pretrained(f"./sd-vae-ft-ema").to(device)
+    # # to do: specify vae path and model_path
+    vae_path = "./sd-vae-ft-ema"
+    model_path = "./DiT-XL-2-256x256.pt"
+    
+    vae = AutoencoderKL.from_pretrained(vae_path).to(device)
     vae.eval()
 
     latent_size = 32
 
-    path = "DiT-XL-2-256x256.pt"
     model = DiT_models["DiT-XL/2"](input_size=latent_size, num_classes=1000, learn_sigma=True).to(device)
-    model.load_state_dict(torch.load(path))
+    model.load_state_dict(torch.load(model_path))
     model.eval()
 
     class_labels = torch.tensor([207, 360, 387, 974, 88, 979, 417, 279], device=device)
@@ -296,7 +303,7 @@ def ddim_skip_sample(num_step=24):
         input_z = output_z
     
     samples = vae.decode(input_z / 0.18215).sample
-    path = make_path("results/validation/ddim_%03d__seed_%d__original.png"%(num_step, seed))
+    path = make_path(root_path/"results/validation/ddim_%03d__seed_%d__original.png"%(num_step, seed))
     save_image(samples, path, nrow=8, normalize=True, value_range=(-1, 1))
 
     return
@@ -308,7 +315,7 @@ def natural_inference(alg_name="ddpm", num_step=24):
     
     device = "cuda:0"
     
-    weight_path = "results/%s/%s_%03d.npz"%(alg_name, alg_name, num_step)
+    weight_path = root_path/"results/%s/%s_%03d.npz"%(alg_name, alg_name, num_step)
     # # Be careful! Make sure that the past_x0_coeff have been normalized to the marginal signal coefficients
     past_x0_coeff, past_eps_coeff, node_coeff = np.load(weight_path).values()
     num_step = past_eps_coeff.shape[0]
@@ -321,15 +328,18 @@ def natural_inference(alg_name="ddpm", num_step=24):
     # reverse list
     coeff_xt2x0 = coeff_xt2x0.flip(0)
     coeff_eps2x0 = coeff_eps2x0.flip(0)
+
+    # # to do: specify vae path and model_path
+    vae_path = "./sd-vae-ft-ema"
+    model_path = "./DiT-XL-2-256x256.pt"
     
-    vae = AutoencoderKL.from_pretrained(f"./sd-vae-ft-ema").to(device)
+    vae = AutoencoderKL.from_pretrained(vae_path).to(device)
     vae.eval()
 
     latent_size = 32
 
-    path = "DiT-XL-2-256x256.pt"
     model = DiT_models["DiT-XL/2"](input_size=latent_size, num_classes=1000, learn_sigma=True).to(device)
-    model.load_state_dict(torch.load(path))
+    model.load_state_dict(torch.load(model_path))
     model.eval()
 
     class_labels = torch.tensor([207, 360, 387, 974, 88, 979, 417, 279], device=device)
@@ -361,7 +371,7 @@ def natural_inference(alg_name="ddpm", num_step=24):
         input_z = output_z
 
     samples = vae.decode(input_z / 0.18215).sample
-    path = make_path("results/validation/%s__seed_%d__natural.png" % (weight_name, seed))
+    path = make_path(root_path/"results/validation/%s__seed_%d__natural.png" % (weight_name, seed))
     save_image(samples, path, nrow=8, normalize=True, value_range=(-1, 1))
   
     return

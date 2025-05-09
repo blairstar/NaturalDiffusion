@@ -1,5 +1,8 @@
 # # Part of the code is copied from https://github.com/yang-song/score_sde.git
 
+from pathlib import Path
+root_path = Path(__file__).resolve().parent.parent
+
 import numpy as np
 import torch
 import sympy
@@ -114,7 +117,7 @@ def analyze_ode(num_step=50):
     print(past_epsilon_coeff)
     print(node_coeff)
 
-    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, "./results/euler_heun", "ode_euler")
+    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, root_path/"results/euler_heun", "ode_euler")
 
     return
 
@@ -188,7 +191,7 @@ def analyze_sde(num_step=50):
             past_xstart_coeff[kk - 1, :len(y_coeffs)] = np.array(y_coeffs)
             past_epsilon_coeff[kk - 1, :len(eps_coeffs)] = np.array(eps_coeffs)
 
-    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, "./results/euler_heun", "sde_euler")
+    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, root_path/"results/euler_heun", "sde_euler")
     
     print(past_xstart_coeff)
     print(past_epsilon_coeff)
@@ -280,7 +283,7 @@ def analyze_heun(num_step=25):
             past_xstart_coeff[kk - 1, :len(y_coeffs)] = np.array(y_coeffs)
             past_epsilon_coeff[kk - 1, :len(eps_coeffs)] = np.array(eps_coeffs)
 
-    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, "./results/euler_heun", "ode_heun")
+    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, root_path/"results/euler_heun", "ode_heun")
     
     print(past_xstart_coeff)
     print(past_epsilon_coeff)

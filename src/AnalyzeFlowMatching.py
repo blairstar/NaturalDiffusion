@@ -1,3 +1,7 @@
+
+from pathlib import Path
+root_path = Path(__file__).resolve().parent.parent
+
 import numpy as np
 import pandas as pd
 import os
@@ -45,7 +49,7 @@ def flow_analyze_coeff(num_step=50):
 
     node_coeff = np.vstack([np.array([1.0, 0.0, 1.0]), node_coeff])
     
-    save_coeff_matrix(arr_xz, arr_eps, node_coeff, "./results/flow_euler", "flow_euler")
+    save_coeff_matrix(arr_xz, arr_eps, node_coeff, root_path/"results/flow_euler", "flow_euler")
     
     print(arr_xz)
     print(arr_eps)
@@ -107,7 +111,7 @@ def flow_simpy_analyze_coeff(num_step):
     print(past_epsilon_coeff)
     print(node_coeff)
 
-    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, "./results/flow_euler", "flow_euler_simpy")
+    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, root_path/"results/flow_euler", "flow_euler_simpy")
 
 
 def flow_analyze_coeff_tx():
@@ -125,7 +129,7 @@ def flow_simpy_analyze_coeff_tx():
 
 if __name__ == "__main__":
     '''
-    Here, we offer two options: one is to compute directly through the analytical expression, and the other is to leverage SimPy for automatic computation.
+    Here, we offer two options: one is to compute directly through the analytical expression, and the other is to leverage SymPy for automatic computation.
     For SimPy, when the number of steps exceeds 200, the computation becomes relatively slow.
     '''
     # flow_analyze_coeff_tx()

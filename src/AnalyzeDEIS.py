@@ -1,7 +1,10 @@
 # # Part of the code is copied from  https://github.com/qsh-zh/deis
 
+
 import os, sys
-sys.path.append("deps")
+from pathlib import Path
+root_path = Path(__file__).resolve().parent.parent
+sys.path.append(str(root_path/"deps"))
 
 import numpy as np
 np.set_printoptions(suppress=True, linewidth=200, precision=3)
@@ -125,7 +128,7 @@ def analyze_tab(num_step):
             past_xstart_coeff[kk-1, :len(y_coeffs)] = np.array(y_coeffs)
             past_epsilon_coeff[kk-1, :len(eps_coeffs)] = np.array(eps_coeffs)
 
-    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, "./results/deis", "deis_tab")
+    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, root_path/"results/deis", "deis_tab")
     
     print(past_xstart_coeff)
     print(past_epsilon_coeff)

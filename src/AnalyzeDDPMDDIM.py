@@ -1,4 +1,7 @@
 
+from pathlib import Path
+root_path = Path(__file__).resolve().parent.parent
+
 import numpy as np
 import pandas as pd
 import os
@@ -164,7 +167,7 @@ def ddpm_analyze_coeff(num_step=20):
 
     node_coeff = np.vstack([np.array([999, 0.0, 1.0]), node_coeff])
     
-    save_coeff_matrix(arr_xz, arr_eps, node_coeff, "./results/ddpm", "ddpm")
+    save_coeff_matrix(arr_xz, arr_eps, node_coeff, root_path/"results/ddpm", "ddpm")
 
     print(arr_xz)
     print(arr_eps)
@@ -237,7 +240,7 @@ def ddpm_simpy_analyze_coeff(num_step=20):
             past_xstart_coeff[kk-1, :len(y_coeffs)] = np.array(y_coeffs)
             past_epsilon_coeff[kk-1, :len(eps_coeffs)] = np.array(eps_coeffs)
 
-    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, "./results/ddpm", "ddpm_simpy")
+    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, root_path/"results/ddpm", "ddpm_sympy")
     print(past_xstart_coeff)
     print(past_epsilon_coeff)
     print(node_coeff)
@@ -329,7 +332,7 @@ def ddim_analyze_coeff(num_step=20):
 
     node_coeff = np.vstack([np.array([999, 0.0, 1.0]), node_coeff])
     
-    save_coeff_matrix(arr_xz, arr_eps, node_coeff, "./results/ddim", "ddim")
+    save_coeff_matrix(arr_xz, arr_eps, node_coeff, root_path/"results/ddim", "ddim")
     
     print(arr_xz)
     print(arr_eps)
@@ -395,7 +398,7 @@ def ddim_simpy_analyze_coeff(num_step=20):
             past_xstart_coeff[kk - 1, :len(y_coeffs)] = np.array(y_coeffs)
             past_epsilon_coeff[kk - 1, :len(eps_coeffs)] = np.array(eps_coeffs)
     
-    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, "./results/ddim", "ddim_simpy")
+    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, root_path/"results/ddim", "ddim_sympy")
 
     print(past_xstart_coeff)
     print(past_epsilon_coeff)
@@ -443,10 +446,10 @@ def convert_npz_to_csv():
 
 if __name__ == "__main__":
     '''
-    Here, we offer two options: one is to compute directly through the analytical expression, and the other is to leverage SimPy for automatic computation.
-    For SimPy, when the number of steps exceeds 200, the computation becomes relatively slow.
+    Here, we offer two options: one is to compute directly through the analytical expression, and the other is to leverage SymPy for automatic computation.
+    For SymPy, when the number of steps exceeds 200, the computation becomes relatively slow.
     '''
-    ddpm_analyze_coeff_tx()
-    ddim_analyze_coeff_tx()
-    # ddpm_simpy_analyze_coeff_tx()
-    # ddim_simpy_analyze_coeff_tx()
+    # ddpm_analyze_coeff_tx()
+    # ddim_analyze_coeff_tx()
+    ddpm_simpy_analyze_coeff_tx()
+    ddim_simpy_analyze_coeff_tx()

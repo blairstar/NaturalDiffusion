@@ -1,5 +1,9 @@
-import copy
 
+
+from pathlib import Path
+root_path = Path(__file__).resolve().parent.parent
+
+import copy
 import cv2
 
 from diffusers import StableDiffusion3Pipeline
@@ -136,7 +140,7 @@ def sd_euler_natural_inference_tx():
         img_alls.extend(imgs)
     
     # due to the large number of images, this step takes a long time.
-    path = make_path("results/sd3/euler_seq_clip0.png")
+    path = make_path(root_path/"results/sd3/euler_seq_clip0.png")
     save_imgs(img_alls, path, (256, 256), 20)
 
     output_xstarts = (output_xstarts / pipe.vae.config.scaling_factor) + pipe.vae.config.shift_factor
@@ -144,7 +148,7 @@ def sd_euler_natural_inference_tx():
     images = pipe.image_processor.postprocess(images, output_type="pil")
 
     img_all = np.hstack([np.array(image)[:, :, ::-1] for image in images])
-    cv2.imwrite("results/sd3/euler_sgl_clip0.png", img_all)
+    cv2.imwrite(root_path/"results/sd3/euler_sgl_clip0.png", img_all)
  
     return
 
@@ -184,7 +188,7 @@ def sd_natural_inference_tx():
     timesteps, sigmas = pipe.scheduler.timesteps, pipe.scheduler.sigmas
     timesteps, sigmas = timesteps.to(device), sigmas.to(device)
     
-    dir_path = "./weights"
+    dir_path = root_path/"weights"
     weight_names = ["sd3_step_28_weight.csv", "sd3_step_28_weight_sharp.csv"]
     
     for weight_name in weight_names:
@@ -225,7 +229,7 @@ def sd_natural_inference_tx():
             imgs = pipe.image_processor.postprocess(imgs, output_type="pil")
             img_alls.extend(imgs)
 
-        path = make_path("results/sd3/seq_%s.png"%(weight_name[:-4]))
+        path = make_path(root_path/"results/sd3/seq_%s.png"%(weight_name[:-4]))
         
         # due to the large number of images, this step takes a long time.
         save_imgs(img_alls, path, (256, 256), 20)
@@ -235,7 +239,7 @@ def sd_natural_inference_tx():
         images = pipe.image_processor.postprocess(images, output_type="pil")
         
         img_all = np.hstack([np.array(image)[:, :, ::-1] for image in images])
-        cv2.imwrite("results/sd3/sgl_%s.png"%(weight_name[:-4]), img_all)
+        cv2.imwrite(root_path/"results/sd3/sgl_%s.png"%(weight_name[:-4]), img_all)
         
     return
 

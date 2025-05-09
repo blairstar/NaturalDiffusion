@@ -1,12 +1,12 @@
 # # Part of the code is copied from https://github.com/LuChengTHU/dpm-solver
 
+from pathlib import Path
+root_path = Path(__file__).resolve().parent.parent
+
 import numpy as np
 from sympy import symbols
-import sympy
 import torch
 import pandas as pd
-import os, sys
-sys.path.append("deps")
 
 from Utils import CAnalyzer, save_coeff_matrix
 
@@ -315,7 +315,7 @@ def analyze_dpmsolver_2s(step=15):
             past_xstart_coeff[kk-1, :len(y_coeffs)] = np.array(y_coeffs)
             past_epsilon_coeff[kk-1, :len(eps_coeffs)] = np.array(eps_coeffs)
 
-    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, "./results/dpmsolver", "dpmsolver2s")
+    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, root_path/"results/dpmsolver", "dpmsolver2s")
     
     print(past_xstart_coeff)
     print(past_epsilon_coeff)
@@ -417,7 +417,7 @@ def analyze_dpmsolver_pp_2s(step=15):
             past_xstart_coeff[kk-1, :len(y_coeffs)] = np.array(y_coeffs)
             past_epsilon_coeff[kk-1, :len(eps_coeffs)] = np.array(eps_coeffs)
 
-    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, "./results/dpmsolverpp", "dpmsolverpp2s")
+    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, root_path/"results/dpmsolverpp", "dpmsolverpp2s")
     
     print(past_xstart_coeff)
     print(past_epsilon_coeff)
@@ -536,7 +536,7 @@ def analyze_dpmsolver_3s(step=10):
             past_xstart_coeff[kk-1, :len(y_coeffs)] = np.array(y_coeffs)
             past_epsilon_coeff[kk-1, :len(eps_coeffs)] = np.array(eps_coeffs)
 
-    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, "./results/dpmsolver", "dpmsolver3s")
+    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, root_path/"results/dpmsolver", "dpmsolver3s")
     
     print(past_xstart_coeff)
     print(past_epsilon_coeff)
@@ -655,7 +655,7 @@ def analyze_dpmsolver_pp_3s(step=10):
             past_xstart_coeff[kk-1, :len(y_coeffs)] = np.array(y_coeffs)
             past_epsilon_coeff[kk-1, :len(eps_coeffs)] = np.array(eps_coeffs)
 
-    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, "./results/dpmsolverpp", "dpmsolverpp3s")
+    save_coeff_matrix(past_xstart_coeff, past_epsilon_coeff, node_coeff, root_path/"results/dpmsolverpp", "dpmsolverpp3s")
     
     print(past_xstart_coeff)
     print(past_epsilon_coeff)

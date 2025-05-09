@@ -1,4 +1,7 @@
 
+from pathlib import Path
+root_path = Path(__file__).resolve().parent.parent
+
 import os, sys
 import torch
 import glob
@@ -58,13 +61,16 @@ def get_feature(vae, dir_path, size=256, flip=False, device="cuda:0"):
 
 
 def get_batch_feature_tx():
+    # # to do:
+    # # 1.specify vae model path
+    # # 2.Specify the path of the ImageNet dataset, with each class in a separate folder.
+    vae_path = "./sd-vae-ft-ema"
+    dir_path = ""
     device = "cuda"
-    vae = AutoencoderKL.from_pretrained(f"../sd-vae-ft-ema").to(device)
+    
+    vae = AutoencoderKL.from_pretrained(vae_path).to(device)
     vae.eval()
     
-    # # to do:
-    # # Specify the path of the ImageNet dataset, with each class in a separate folder.
-    dir_path = ""
     size = 256
     
     rng = np.random.default_rng(10)
@@ -79,7 +85,7 @@ def get_batch_feature_tx():
         name = os.path.basename(path)
         feats = get_feature(vae, path, size, False, device)
         feats = feats.to(dtype=torch.bfloat16, device="cpu")
-        torch.save(feats, "latents_%03d/%s.pt" % (size, name))
+        torch.save(feats, root_path/"feature/latents_%03d/%s.pt" % (size, name))
 
     return
 
@@ -113,7 +119,7 @@ def get_vp_statistics_tx():
     # # specify the feature path
     # # assume feature is stored in the pth format, one file one category, batch_size*feat_dim
     size = 512
-    path = "latents_%d/*.pt" % size
+    path = root_path/"feature/latents_%d/*.pt" % size
     
     paths = glob.glob(path)
     print(paths[0])
@@ -158,7 +164,7 @@ def get_vp_statistics_tx():
         xx_probs = np.concatenate(xx_probs)
         hist_x0, _ = np.histogram(x0_probs, bins=100, range=(0, 1))
         hist_xx, _ = np.histogram(xx_probs, bins=100, range=(0, 1))
-        np.savez("hist/vp_%d_%d.npz" % (size, t), hist_x0=hist_x0, hist_xx=hist_xx)
+        np.savez(root_path/"feature/hist/vp_%d_%d.npz" % (size, t), hist_x0=hist_x0, hist_xx=hist_xx)
 
     return
 
@@ -172,7 +178,7 @@ def get_flow_statistics_tx():
     # # specify the feature path
     # # assume that features are stored in the pth format, one file one category, batch_size*feat_dim
     size = 512
-    path = "latents_%d/*.pt" % size
+    path = root_path/"feature/latents_%d/*.pt" % size
     paths = glob.glob(path)
     print(paths[0])
 
@@ -216,11 +222,12 @@ def get_flow_statistics_tx():
         xx_probs = np.concatenate(xx_probs)
         hist_x0, _ = np.histogram(x0_probs, bins=100, range=(0, 1))
         hist_xx, _ = np.histogram(xx_probs, bins=100, range=(0, 1))
-        np.savez("hist/flow_%d_%d.npz" % (size, t), hist_x0=hist_x0, hist_xx=hist_xx)
+        np.savez(root_path/"feature/hist/flow_%d_%d.npz" % (size, t), hist_x0=hist_x0, hist_xx=hist_xx)
 
     return
 
 
 if __name__ == "__main__":
-    # get_vp_statistics_tx()
+    get_batch_feature_tx()
+    get_vp_statistics_tx()
     get_flow_statistics_tx()
