@@ -174,7 +174,7 @@ def ddpm_analyze_coeff(num_step=20):
     return
 
 
-def ddpm_simpy_analyze_coeff(num_step=20):
+def ddpm_sympy_analyze_coeff(num_step=20):
     coeff_all = create_ddpm_coeff()
     skip_coeff_all, skip_idxs = skip_ddpm_coeff(coeff_all, num_step)
     skip_alphas, skip_alphas_bar, skip_log_var, skip_coeff_xt2x0, skip_coeff_eps2x0, skip_coeff_xt, skip_coeff_x0 = skip_coeff_all
@@ -340,7 +340,7 @@ def ddim_analyze_coeff(num_step=20):
     return
 
 
-def ddim_simpy_analyze_coeff(num_step=20):
+def ddim_sympy_analyze_coeff(num_step=20):
     coeff_all = create_ddim_coeff()
     skip_coeff_all, skip_idxs = skip_ddim_coeff(coeff_all, num_step)
     skip_alphas, skip_alphas_bar, skip_coeff_xt2x0, skip_coeff_eps2x0, skip_coeff_xt, skip_coeff_x0 = skip_coeff_all
@@ -417,15 +417,15 @@ def ddim_analyze_coeff_tx():
     return
 
 
-def ddpm_simpy_analyze_coeff_tx():
+def ddpm_sympy_analyze_coeff_tx():
     for step in [18, 24, 100, 200]:
-        ddpm_simpy_analyze_coeff(step)
+        ddpm_sympy_analyze_coeff(step)
     return
 
 
-def ddim_simpy_analyze_coeff_tx():
+def ddim_sympy_analyze_coeff_tx():
     for step in [18, 24, 100, 200]:
-        ddim_simpy_analyze_coeff(step)
+        ddim_sympy_analyze_coeff(step)
     return
 
 
@@ -450,5 +450,5 @@ if __name__ == "__main__":
     '''
     # ddpm_analyze_coeff_tx()
     # ddim_analyze_coeff_tx()
-    ddpm_simpy_analyze_coeff_tx()
-    ddim_simpy_analyze_coeff_tx()
+    ddpm_sympy_analyze_coeff_tx()
+    ddim_sympy_analyze_coeff_tx()

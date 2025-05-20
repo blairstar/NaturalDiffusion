@@ -12,7 +12,7 @@ np.set_printoptions(suppress=True, linewidth=200, precision=3)
 
 
 def draw_marginal_coeff(past_x0_coeff, past_eps_coeff, node_coeff, path):
-    with plt.style.context(['science', 'ieee']):
+    with plt.style.context(['science', 'ieee', 'no-latex']):
         fig, ax = plt.subplots()
         ax.plot(node_coeff[1:, 0], past_x0_coeff.sum(axis=1), label="ideal signal", linestyle="solid", color="orange")
         ax.plot(node_coeff[1:, 0], node_coeff[1:, 1],  label="equiv signal", linestyle="dashed", color="red")

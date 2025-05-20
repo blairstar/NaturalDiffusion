@@ -15,6 +15,9 @@ from torchvision.utils import save_image
 torch.set_printoptions(sci_mode=False, precision=6, linewidth=200)
 np.set_printoptions(suppress=True, precision=6, linewidth=200)
 
+vae_path = None
+model_path = None
+
 
 def make_path(path):
     path = os.path.abspath(path)
@@ -214,10 +217,6 @@ def ddpm_skip_sample(num_step=24):
 
     coeff = coeff_xt2x0, coeff_eps2x0, coeff_xt, coeff_x0
     
-    # # to do: specify vae path and model_path
-    vae_path = "./sd-vae-ft-ema"
-    model_path = "./DiT-XL-2-256x256.pt"
-
     vae = AutoencoderKL.from_pretrained(vae_path).to(device)
     vae.eval()
 
@@ -271,10 +270,6 @@ def ddim_skip_sample(num_step=24):
 
     coeff = coeff_xt2x0, coeff_eps2x0, coeff_xt, coeff_x0
 
-    # # to do: specify vae path and model_path
-    vae_path = "./sd-vae-ft-ema"
-    model_path = "./DiT-XL-2-256x256.pt"
-    
     vae = AutoencoderKL.from_pretrained(vae_path).to(device)
     vae.eval()
 
@@ -319,7 +314,7 @@ def natural_inference(alg_name="ddpm", num_step=24):
     
     device = "cuda:0"
     
-    weight_path = root_path/("results/%s/%s_%03d.npz"%(alg_name, alg_name, num_step))
+    weight_path = root_path/("results/%s/%s_%03d.npz"%(alg_name.replace("_sympy", ""), alg_name, num_step))
     # # Be careful! Make sure that the past_x0_coeff have been normalized to the marginal signal coefficients
     past_x0_coeff, past_eps_coeff, node_coeff = np.load(weight_path).values()
     num_step = past_eps_coeff.shape[0]
@@ -333,10 +328,6 @@ def natural_inference(alg_name="ddpm", num_step=24):
     coeff_xt2x0 = coeff_xt2x0.flip(0)
     coeff_eps2x0 = coeff_eps2x0.flip(0)
 
-    # # to do: specify vae path and model_path
-    vae_path = "./sd-vae-ft-ema"
-    model_path = "./DiT-XL-2-256x256.pt"
-    
     vae = AutoencoderKL.from_pretrained(vae_path).to(device)
     vae.eval()
 
@@ -384,16 +375,22 @@ def natural_inference(alg_name="ddpm", num_step=24):
 def compare_output_tx():
     ddpm_skip_sample(24)
     ddim_skip_sample(24)
-    natural_inference("ddpm", 24)
-    natural_inference("ddim", 24)
+    natural_inference("ddpm_sympy", 24)
+    natural_inference("ddim_sympy", 24)
+    # natural_inference("ddpm", 24)
+    # natural_inference("ddim", 24)
     return
 
 
 if __name__ == "__main__":
     """
-    This code relies on the pre-trained DiT model(DiT-XL-2-256x256.pt) and its corresponding decoder(sd-vae-ft-ema).
-    Please download them and place them in the root directory.
+    This code relies on the pre-trained DiT model(https://dl.fbaipublicfiles.com/DiT/models/DiT-XL-2-256x256.pt) and its corresponding decoder(https://huggingface.co/stabilityai/sd-vae-ft-ema).
+    Please download them and set their path in the following variables.
     Once the execution is complete, you can find two types of output results in the results/validation folder:
     one from the original algorithm and the other from the corresponding Natural Inference. You'll observe that there is no difference between them.
     """
+    # # to do: specify vae path and model_path
+    vae_path = "./sd-vae-ft-ema"
+    model_path = "./DiT-XL-2-256x256.pt"
+    
     compare_output_tx()
